@@ -999,7 +999,7 @@ export function CollectionManagement(props){
       import {ic_warning} from 'react-icons-kit/md/ic_warning'
       import {envelopeO} from 'react-icons-kit/fa/envelopeO' // Correspondence 
       import {ic_devices} from 'react-icons-kit/md/ic_devices';
-      import {userMd} from 'react-icons-kit/fa/userMd'
+      import {user} from 'react-icons-kit/fa/userMd'
       import {users} from 'react-icons-kit/fa/users'
       import {ic_question_answer} from 'react-icons-kit/md/ic_question_answer'      
       import {ic_transfer_within_a_station} from 'react-icons-kit/md/ic_transfer_within_a_station' // Encounters 
