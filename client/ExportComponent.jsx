@@ -234,7 +234,7 @@ Session.setDefault('fileExtension', 'json');
 Session.setDefault('dataContent', '');
 Session.setDefault('syncSourceItem', 1);
 Session.setDefault('exportFileType', 1);
-Session.setDefault('relayUrl', 1);
+Session.setDefault('relayUrl', get(Meteor, 'settings.public.interfaces.fhirRelay.channel.endpoint', 'http://localhost:3000/baseR4'));
 
 
 
@@ -499,7 +499,7 @@ export function ExportComponent(props){
     setRelayUrl(event.target.value)
   }
   function handleRelay(){
-    alert(JSON.stringify(relayUrl))
+    alert("Relay URL: " + JSON.stringify(relayUrl))
 
     let testBundle = {
       "resourceType": "Bundle",
@@ -510,52 +510,43 @@ export function ExportComponent(props){
           "fullUrl": "Composition/5pju5QqNCuMvJRJvw",
           "resource": {
             "resourceType": "Composition",
-            "identifier": {},
             "status": "preliminary",
-            "type": {},
-            "class": {},
             "subject": {
               "display": "",
               "reference": ""
             },
-            "encounter": {
-              "display": "",
-              "reference": ""
-            },
             "date": "2021-07-22",
-            "author": [
-              {
-                "display": "",
-                "reference": ""
-              }
-            ],
-            "title": "Test Bundle Foo",
-            "confidentiality": "0",
-            "attester": [],
-            "custodian": {
-              "display": "",
-              "reference": ""
-            },
-            "relatesTo": [],
-            "event": [],
-            "section": []
+            "title": "Test Bundle"
           }
         }
       ]
     }
-    let httpHeaders = { headers: {
-      'Content-Type': 'application/fhir+json',
-      'Access-Control-Allow-Origin': '*'          
-  }}
 
-    HTTP.post(relayUrl, {
-      headers: httpHeaders,
-      data: testBundle
-    }, function(error, result){
-      if(error){console.log('error', error)}
-      if(result){console.log('result', result)}
+
+    Meteor.call('proxyRelay',  relayUrl, exportBuffer, function(error, result){
+      if(error){
+        alert(JSON.stringify(error));
+      }
+      if(result){
+        alert(JSON.stringify(result));
+      }
     })
+    
+    // let httpHeaders = { headers: {
+    //   'Content-Type': 'application/fhir+json',
+    //   'Access-Control-Allow-Origin': '*'          
+    // }}
 
+    // HTTP.post(relayUrl, {
+    //   npmRequestOptions: {
+    //     rejectUnauthorized: false 
+    //   },
+    //   headers: httpHeaders,
+    //   data: exportBuffer
+    // }, function(error, result){
+    //   if(error){console.log('error', error)}
+    //   if(result){console.log('result', result)}
+    // })
   }
 
 
