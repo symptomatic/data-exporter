@@ -1,6 +1,6 @@
 Package.describe({
   name: 'symptomatic:data-relay',
-  version: '0.9.10',
+  version: '0.10.0',
   summary: 'Data Relay',
   git: 'http://github.com/symptomatic/data-relay',
   documentation: 'README.md'
@@ -30,10 +30,6 @@ Package.onUse(function(api) {
 });
 
 
-// Npm.depends({
-//   // 'react-dropzone-component': '2.0.0',
-//   // "xml2js": "0.4.23",
-//   // "xlsx": "0.16.0",
-//   // "papaparse": "5.2.0",
-//   // "file-dialog": "0.0.8"
-// });
+Npm.depends({
+  "gofsh": "1.3.1"
+});
