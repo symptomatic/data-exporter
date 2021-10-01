@@ -173,50 +173,6 @@ function pluralizeResourceName(resourceType){
 //       }
 //     }
     
-<<<<<<< HEAD
-  },
-  /* read the data and return the workbook object to the frontend */
-  proxyInsertResource: function(proxiedInsertRequest){
-    check(proxiedInsertRequest, Object);
-
-    if (get(Meteor, 'settings.private.allowUnsafeProxy')) {
-      if(proxiedInsertRequest){
-        // we are running this, assuming that PubSub is in place and synchronizing data cursors
-        console.log('ProxyInsert - Received a proxiedInsertRequest to add to the distributed database.', proxiedInsertRequest)
-          
-        let response = false;
-        // console.log('Collections', Collections)
-
-        // console.log('pluralizeResourceName: ' + pluralizeResourceName(get(proxiedInsertRequest, 'resource.resourceType')))
-        // the cursor appears to exist
-        if(typeof Collections[pluralizeResourceName(get(proxiedInsertRequest, 'resourceType'))] === "object"){
-
-          // there doesnt seem to be a pre-existing record
-          if(!Collections[pluralizeResourceName(get(proxiedInsertRequest, 'resourceType'))].findOne({_id: proxiedInsertRequest._id})){
-            console.log('Couldnt find record; attempting to add one to the database.')
-
-            // lets try to insert the record
-            response = Collections[pluralizeResourceName(get(proxiedInsertRequest, 'resourceType'))].insert(proxiedInsertRequest, {validate: false, filter: false}, function(error){
-              if(error) {
-                console.log('window(pluralizeResourceName(resourceType)).insert.error', error)
-              }                    
-            });   
-          } else {
-            console.log('Found a pre-existing copy of the record.  Thats weird and probably shouldnt be happening.');
-          }  
-        } else {
-          console.log('Cursor doesnt appear to exist');
-        }
-
-        return response;
-      } else {
-        console.log('Received a request for a proxy insert, but received no FHIR resource!');
-      }
-    } else {
-      console.log('Received a request for a proxy insert, but user was not logged in!');
-      return "User not logged in!"
-    }
-=======
 //   },
 //   /* read the data and return the workbook object to the frontend */
 //   proxyInsertResource: function(proxiedInsertRequest){
@@ -259,35 +215,9 @@ function pluralizeResourceName(resourceType){
 //       console.log('Received a request for a proxy insert, but user was not logged in!');
 //       return "User not logged in!"
 //     }
->>>>>>> 346d822771c35beb3b99a65951ca7deff5d6f19d
 
 
 
     
-<<<<<<< HEAD
-  },
-  proxyRelay: function(relayUrl, bundleData){
-
-    console.log('proxyRelay', relayUrl, bundleData)
-
-    let httpHeaders = { "headers": {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'          
-    }};
-
-    HTTP.post(relayUrl, {
-      npmRequestOptions: {
-        rejectUnauthorized: false 
-      },
-      headers: httpHeaders,
-      data: bundleData
-    }, function(error, result){
-      if(error){console.log('error', error)};
-      if(result){console.log('result', result)};
-    })
-  }
-});
-=======
 //   }
 // });
->>>>>>> 346d822771c35beb3b99a65951ca7deff5d6f19d

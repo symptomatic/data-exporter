@@ -442,18 +442,20 @@ export function CollectionManagement(props){
   if(props.selectedPatientId){
     collectionManagementQuery["subject.reference"] = "urn:uuid:" + props.selectedPatientId
   }
+  
   supportedResources.forEach(function(resourceName){
     if(typeof window[FhirUtilities.pluralizeResourceName(resourceName)] === "object"){
       data.collections.client[resourceName] = window[FhirUtilities.pluralizeResourceName(resourceName)].find(collectionManagementQuery).count();
       data.collections.localClient[resourceName] = window[FhirUtilities.pluralizeResourceName(resourceName)]._collection.find(collectionManagementQuery).count();
 
-      Object.keys( Meteor.default_connection._subscriptions).forEach(function(key) {
-        var record = Meteor.default_connection._subscriptions[key];          
-        if(record.name === FhirUtilities.pluralizeResourceName(resourceName)){
-          data.collections.pubsub[resourceName] = true;
-        }
-      });
-
+      if(Meteor && Meteor.default_connection){
+        Object.keys( Meteor.default_connection._subscriptions).forEach(function(key) {
+          var record = Meteor.default_connection._subscriptions[key];          
+          if(record.name === FhirUtilities.pluralizeResourceName(resourceName)){
+            data.collections.pubsub[resourceName] = true;
+          }
+        });  
+      }
     }
   });
 
