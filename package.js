@@ -1,6 +1,6 @@
 Package.describe({
   name: 'symptomatic:data-relay',
-  version: '0.10.0',
+  version: '0.11.0',
   summary: 'Data Relay',
   git: 'http://github.com/symptomatic/data-relay',
   documentation: 'README.md'
@@ -16,7 +16,7 @@ Package.onUse(function(api) {
   api.use('es5-shim@4.8.0');
   api.use('ecmascript@0.15.0');
 
-  api.use('react-meteor-data@2.1.2');
+  api.use('react-meteor-data@2.4.0');
   api.use('session');
 
   api.use('clinical:hl7-resource-datatypes');
