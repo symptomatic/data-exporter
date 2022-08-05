@@ -594,12 +594,16 @@ export function ExportComponent(props){
 
   let relayOptions = [];
   let interfacesObject = get(Meteor, 'settings.public.interfaces');
-  Object.keys(interfacesObject).forEach(function(key, index){
-    let interface = interfacesObject[key];
-    if(has(interface, 'channel.endpoint') && (get(interface, 'status') === "active")){
-      relayOptions.push(<MenuItem value={get(interface, 'channel.endpoint')} id={"relay-menu-item-" + index} key={"relay-menu-item-" + index} >{get(interface, 'name')}</MenuItem>)
-    }
-  });
+  if(interfacesObject){
+    Object.keys(interfacesObject).forEach(function(key, index){
+      let interface = interfacesObject[key];
+      if(has(interface, 'channel.endpoint') && (get(interface, 'status') === "active")){
+        relayOptions.push(<MenuItem value={get(interface, 'channel.endpoint')} id={"relay-menu-item-" + index} key={"relay-menu-item-" + index} >{get(interface, 'name')}</MenuItem>)
+      }
+    });  
+  } else {
+    console.log('WARNING:  No interfaces defined!')
+  }
 
   let rightColumnStyle = {width: '100%', marginBottom: '84px', position: 'relative'};
   if(window.innerWidth < 920){
