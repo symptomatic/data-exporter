@@ -21,6 +21,12 @@ import {
   SelectField,
   Checkbox
 } from '@material-ui/core';
+
+// import Accordion from '@material-ui/Accordion';
+// import AccordionSummary from '@material-ui/AccordionSummary';
+// import AccordionDetails from '@material-ui/AccordionDetails';
+// import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+
 import PropTypes from 'prop-types';
 
 // import AccountCircle from 'material-ui/svg-icons/action/account-circle';
@@ -50,6 +56,7 @@ import { StyledCard, PageCanvas } from 'fhir-starter';
 import MedicalRecordsExporter from '../lib/MedicalRecordsExporter';
 import { CollectionManagement } from './CollectionManagement';
 
+import { makeStyles } from '@material-ui/core/styles';
 
 
 
@@ -136,6 +143,16 @@ function DynamicSpacer(props){
     }
   });
 
+
+  const useStyles = makeStyles((theme) => ({
+    root: {
+      width: '100%',
+    },
+    heading: {
+      fontSize: theme.typography.pxToRem(15),
+      fontWeight: theme.typography.fontWeightRegular,
+    },
+  }));
 
 //===================================================================================================================
 // Cordova  
@@ -259,6 +276,9 @@ TabContainer.propTypes = {
 // Main Component  
 
 export function ExportComponent(props){
+
+  const classes = useStyles();
+
   if(!logger && window.logger){
     logger = window.logger;
   }
@@ -275,10 +295,13 @@ export function ExportComponent(props){
   const [relayUrl, setRelayUrl] = useState("");
   const [encryptExport, setEncryptExport] = useState(false);
   const [downloadFileName, setDownloadFileName ] = useState(get(Meteor, 'settings.public.defaults.exportFile.fileName', ""));
-  const [downloadFileExtension, setDownloadFileExtension ] = useState(get(Meteor, 'settings.public.defaults.exportFile.downloadFileExtension', ""));
+  const [downloadFileExtension, setDownloadFileExtension ] = useState(".json");
   const [appendDate, setAppendDate ] = useState(get(Meteor, 'settings.public.defaults.exportFile.appendDate', false));
   const [patientFilter, setPatientFilter] = useState("");
   const [errorFilter, setToggleErrorFilter] = useState(false);
+
+  const [tableOfContents, setTableOfContents] = useState(false);
+  const [coverLetter, setCoverLetter] = useState(false);
 
   
   //----------------------------------------------------------------------------------------------------
@@ -298,6 +321,27 @@ export function ExportComponent(props){
   }
   function handleChangeExportFileType(event){
     setExportFileType(event.target.value)
+
+    switch (event.target.value) {
+      case 1:
+        setDownloadFileExtension('.json')
+        break;
+      case 2:
+        setDownloadFileExtension('.ndjson')
+        break;
+      case 3:
+        setDownloadFileExtension('.csv')
+        break;
+      case 4:
+        setDownloadFileExtension('.geojson')
+        break;
+      case 5:
+        setDownloadFileExtension('.phr')
+        break;
+            
+      default:
+        break;
+    }
   }
   function handleChangePatientFilter(event){
     setPatientFilter(event.target.value)
@@ -306,18 +350,32 @@ export function ExportComponent(props){
     console.log('handleToggleErrorFilter', isChecked)
     setToggleErrorFilter(isChecked)
   }
-  function exportFile(event, value){
-    console.log("Let's try to export a file...")
+  function handleToggleCoverLetter(event, isChecked){
+    console.log('handleToggleCoverLetter', isChecked)
+    setCoverLetter(isChecked)
+  }
+  function handleToggleTableOfContents(event, isChecked){
+    console.log('handleToggleTableOfContents', isChecked)
+    setTableOfContents(isChecked)
+  }
+  function prepareData(event, value){
+    console.log("Let's try to export a file.  Using algorithm #" + exportFileType)
     let self = this;
 
     let dataContent = Session.get('exportBuffer');
 
-    switch (Session.get('exportFileType')) {
+    switch (exportFileType) {
       case 1:  // FHIR Bundle
         exportContinuityOfCareDoc();
-      break;      
+        break;      
+      case 2:  // FHIR Bulk Data
+        exportBulkData();
+        break;      
       case 4:  // Geojson
         exportGeojson();
+        break;      
+      case 5:  // PHR
+        exportBulkData();
         break;      
       default:
         exportContinuityOfCareDoc();
@@ -354,7 +412,12 @@ export function ExportComponent(props){
   function exportContinuityOfCareDoc(){
     console.log('Export a Continuity Of Care Document');
 
-    MedicalRecordsExporter.exportContinuityOfCareDoc(patientFilter, errorFilter);
+    MedicalRecordsExporter.exportContinuityOfCareDoc(patientFilter, errorFilter, coverLetter, tableOfContents);
+  }
+  function exportBulkData(){
+    console.log('Exporting bulk data');
+
+    MedicalRecordsExporter.exportBulkData(patientFilter, errorFilter, coverLetter, tableOfContents);
   }
 
   function handleEditorUpdate(newExportBuffer){
@@ -382,11 +445,21 @@ export function ExportComponent(props){
 
     } else {
 
+      console.log('exportFileType', exportFileType)
+
       let blob;
       switch (exportFileType) {
-        case 5:  // CSV
+        case 2:  // NDJSON
+          console.log('exportBuffer', exportBuffer)
+          blob = new Blob([exportBuffer], { type: 'application/x-ndjson;charset=utf-8;' })
+          break;      
+        case 3:  // CSV
           csvFile = CSV.unparse(Encounters.find().fetch());
           blob = new Blob([csvFile], { type: 'application/csv;charset=utf-8;' })
+          break;      
+        case 5:  // PHR
+          console.log('exportBuffer', exportBuffer)
+          blob = new Blob([exportBuffer], { type: 'application/phr;charset=utf-8;' })
           break;      
         default:
           if(encryptExport){
@@ -415,8 +488,20 @@ export function ExportComponent(props){
       }
 
       switch (exportFileType) {
-        case 2:  // Geojson
+        case 1:  // JSON
+          downloadFilenameString = downloadFileName + '.json';
+          break;      
+        case 2:  // NDJSON
+          downloadFilenameString = downloadFileName + '.ndjson';
+          break;      
+        case 3:  // CSV
+          downloadFilenameString = downloadFileName + '.csv';
+          break;      
+        case 4:  // Geojson
           downloadFilenameString = downloadFileName + '.geojson';
+          break;      
+        case 5:  // PHR
+          downloadFilenameString = downloadFileName + '.phr';
           break;      
         default:
           if(encryptExport){
@@ -495,8 +580,31 @@ export function ExportComponent(props){
   }
 
   function handleChangeRelayAlgorithm(event, value){
-    // console.log('handleChangeRelayAlgorithm', event, value)
-    setRelayUrl(event.target.value)
+    console.log('handleChangeRelayAlgorithm', event, value)
+   
+
+    switch (event.target.value) {
+      case 1:
+        setDownloadFileExtension('.json')
+        break;
+      case 2:
+        setDownloadFileExtension('.ndjson')
+        break;
+      case 3:
+        setDownloadFileExtension('.csv')
+        break;
+      case 4:
+        setDownloadFileExtension('.geojson')
+        break;
+      case 5:
+        setDownloadFileExtension('.phr')
+        break;
+            
+      default:
+        break;
+    }
+
+     setRelayUrl(event.target.value)
   }
   function handleRelay(){
     alert("Relay URL: " + JSON.stringify(relayUrl))
@@ -571,22 +679,46 @@ export function ExportComponent(props){
     downloadDisabled = true;
     downloadAnchor = <h4 style={{textAlign: 'center', width: '100%', margin: '10px', marginBottom: '20px'}}>Select All > Share > Save to Files > iCloud</h4>
   } else {    
-    fileNameInput = <FormControl style={{width: '100%', marginTop: '20px', marginBottom: '20px'}}>
-      <InputLabel>File Name</InputLabel>
-      <Input
-        id='fileName'
-        name='fileName'
-        type='text'
-        value={downloadFileName}
-        // hintText='PatientName.YYYYMMDD.fhir'
-        // floatingLabelFixed={true}
-        onChange={ changeFileName.bind(this) }
-        // hintText={ Meteor.user() ? Meteor.user().fullName() + '.fhir' : ''}
-        // onKeyPress={this.handleKeyPress.bind(this)}
-        // value={ get(formData, 'fileName') }
-        fullWidth
-      />
-    </FormControl>
+    fileNameInput = <Grid container spacing={3}>
+      <Grid item xs={9} >
+        <FormControl style={{width: '100%', marginTop: '20px', marginBottom: '20px'}}>
+          <InputLabel>File Name</InputLabel>
+          <Input
+            id='fileName'
+            name='fileName'
+            type='text'
+            value={downloadFileName}
+            // hintText='PatientName.YYYYMMDD.fhir'
+            // floatingLabelFixed={true}
+            onChange={ changeFileName.bind(this) }
+            // hintText={ Meteor.user() ? Meteor.user().fullName() + '.fhir' : ''}
+            // onKeyPress={this.handleKeyPress.bind(this)}
+            // value={ get(formData, 'fileName') }
+            fullWidth
+          />
+        </FormControl>
+      </Grid>
+      <Grid item xs={3} >
+      <FormControl style={{width: '100%', marginTop: '20px', marginBottom: '20px'}}>
+          <InputLabel>Extension</InputLabel>
+          <Input
+            id='fileExtension'
+            name='fileExtension'
+            type='text'
+            value={downloadFileExtension}
+            // hintText='PatientName.YYYYMMDD.fhir'
+            // floatingLabelFixed={true}
+            onChange={ changeFileName.bind(this) }
+            // hintText={ Meteor.user() ? Meteor.user().fullName() + '.fhir' : ''}
+            // onKeyPress={this.handleKeyPress.bind(this)}
+            // value={ get(formData, 'fileName') }
+            fullWidth
+          />
+        </FormControl>
+      </Grid>
+    </Grid>
+    
+
   }
 
   let editCardHeight = window.innerHeight - 128 - 64 - 40 - 64 - 80;
@@ -657,6 +789,41 @@ export function ExportComponent(props){
     <div>          
       <Grid container spacing={3} >        
         <Grid item lg={4} style={{width: '100%', marginBottom: '84px'}}>
+        <CardHeader 
+            title="Step 0 - Select Algorithm" />
+          <StyledCard scrollable={true} >
+            <CardContent>
+              <FormControl style={{width: '100%', paddingBottom: '20px'}}>
+                <InputLabel id="export-algorithm-label">Export Algorithm</InputLabel>
+                <Select
+                  // labelId="export-algorithm-label"
+                  id="export-algorithm-selector"
+                  value={ exportFileType }
+                  onChange={ handleChangeExportFileType }
+                  fullWidth
+                  >
+                  <MenuItem value={1} style={{display: 'flow-root'}} ><div style={{float:'left'}}>FHIR Bundle</div><div style={{float:'right'}}>.json</div></MenuItem>
+                  <MenuItem value={2} style={{display: 'flow-root'}} ><div style={{float:'left'}}>FHIR Bulk Data</div><div style={{float:'right'}}>.ndjson</div></MenuItem>
+                  <MenuItem value={3} style={{display: 'flow-root'}} ><div style={{float:'left'}}>Comma Separated Values (CSV)</div><div style={{float:'right'}}>.csv</div></MenuItem>
+                  <MenuItem value={4} style={{display: 'flow-root'}} ><div style={{float:'left'}}>Geojson</div><div style={{float:'right'}}>.geojson</div></MenuItem>
+                  <MenuItem value={5} style={{display: 'flow-root'}} ><div style={{float:'left'}}>Personal Health Record</div><div style={{float:'right'}}>.phr</div></MenuItem>
+                </Select>
+              </FormControl>
+
+              <Checkbox 
+                checked={coverLetter} 
+                onChange={ handleToggleCoverLetter.bind(this)} 
+              />Ensure cover letter exists (Composition) <br />
+              <Checkbox 
+                checked={tableOfContents} 
+                onChange={ handleToggleTableOfContents.bind(this)} 
+              />Ensure table of contents exists (DocumentManifest)
+
+            </CardContent>
+          </StyledCard>
+          <DynamicSpacer />
+
+
           <CardHeader 
             title="Step 1 - Select Data To Export" />
           <StyledCard scrollable={true} >
@@ -699,9 +866,9 @@ export function ExportComponent(props){
             id='exportCcdBtn' 
             color='primary'
             variant='contained'
-            onClick={ exportContinuityOfCareDoc.bind(this) }
+            onClick={ prepareData.bind(this) }
             fullWidth
-          >Prepare Continuity of Care Document</Button>   
+          >Prepare data</Button>   
         </Grid>  
         <Grid item lg={4} style={{width: '100%', height: editCardHeight + 'px', marginBottom: '84px'}}>
           <CardHeader 
@@ -735,7 +902,7 @@ export function ExportComponent(props){
                 id="dropzonePreview"
                 style={{width: '100%', position: 'relative', height: (Session.get('appHeight') - 240).toString() + 'px', borderRadius: '4px', lineHeight: '16px', overflow: 'scroll'}} 
               >
-                { JSON.stringify(exportBuffer, null, 2) }
+                { typeof exportBuffer === "object" ? JSON.stringify(exportBuffer, null, 2) : exportBuffer }
               </pre>
 
             </CardContent>
@@ -743,18 +910,18 @@ export function ExportComponent(props){
               <Button id="clearExportBuffer" color="primary" onClick={clearExportBuffer.bind(this)} >Clear</Button>            
             </CardActions>
           </StyledCard>
-
+          <DynamicSpacer />
 
           
         </Grid>
         <Grid item lg={4} style={rightColumnStyle}>
           <CardHeader 
-            title="Step 3a - Select File Type and Export" />
+            title="Step 3 - Select File Type and Export" />
           <StyledCard scrollable={true} >
             <CardContent>
               { fileNameInput }
 
-              <FormControl style={{width: '100%', paddingBottom: '20px'}}>
+              {/* <FormControl style={{width: '100%', paddingBottom: '20px'}}>
                 <InputLabel id="export-algorithm-label">Export Algorithm</InputLabel>
                 <Select
                   // labelId="export-algorithm-label"
@@ -770,6 +937,16 @@ export function ExportComponent(props){
                   <MenuItem value={5} >Comma Separated Values (CSV)</MenuItem>
                 </Select>
               </FormControl>
+
+              <Checkbox 
+                defaultChecked={false} 
+                onChange={ handleToggleErrorFilter.bind(this)} 
+              />Ensure cover letter exists (Composition) <br />
+              <Checkbox 
+                defaultChecked={false} 
+                onChange={ handleToggleErrorFilter.bind(this)} 
+              />Ensure table of contents exists (DocumentManifest) */}
+
 
               {/* <br/> */}
               {/* <Toggle onToggle={this.toggleEncryptExport.bind(this) } toggled={get(this, 'data.encryptExport')} label="Encrypt" labelPosition='right' /><br /> */}
