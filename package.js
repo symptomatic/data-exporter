@@ -1,6 +1,6 @@
 Package.describe({
   name: 'symptomatic:data-relay',
-  version: '0.11.7',
+  version: '0.11.8',
   summary: 'Data Relay',
   git: 'http://github.com/symptomatic/data-relay',
   documentation: 'README.md'
@@ -32,6 +32,6 @@ Package.onUse(function(api) {
 
 
 
-Npm.depends({
-  "gofsh": "1.3.1"
-});
+// Npm.depends({
+//   "gofsh": "1.3.1"
+// });
