@@ -1,6 +1,6 @@
 Package.describe({
   name: 'symptomatic:data-relay',
-  version: '0.10.0',
+  version: '0.11.8',
   summary: 'Data Relay',
   git: 'http://github.com/symptomatic/data-relay',
   documentation: 'README.md'
@@ -16,11 +16,11 @@ Package.onUse(function(api) {
   api.use('es5-shim@4.8.0');
   api.use('ecmascript@0.15.0');
 
-  api.use('react-meteor-data@2.1.2');
+  api.use('react-meteor-data@2.4.0');
   api.use('session');
 
-  api.use('clinical:hl7-resource-datatypes');
-  api.use('clinical:hl7-fhir-data-infrastructure');
+  api.use('clinical:hl7-resource-datatypes@4.0.7');
+  api.use('clinical:hl7-fhir-data-infrastructure@6.26.21');
 
   api.addFiles('server/methods.proxy.js', ['server']);
 
@@ -29,7 +29,3 @@ Package.onUse(function(api) {
   api.mainModule('index.jsx', 'client');
 });
 
-
-// Npm.depends({
-//   "gofsh": "1.3.1"
-// });
