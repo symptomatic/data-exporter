@@ -764,6 +764,7 @@ export function ExportComponent(props){
                   <MenuItem value={3} disabled >FHIR Bundle - DSTU2</MenuItem>
                   <MenuItem value={4} >Geojson</MenuItem>
                   <MenuItem value={5} >Comma Separated Values (CSV)</MenuItem>
+                  <MenuItem value={6} >FHIR Shorthand (FSH)</MenuItem>
                 </Select>
               </FormControl>
 

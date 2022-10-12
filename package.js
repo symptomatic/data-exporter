@@ -30,6 +30,6 @@ Package.onUse(function(api) {
 });
 
 
-Npm.depends({
-  "gofsh": "1.3.1"
-});
+// Npm.depends({
+//   "gofsh": "1.3.1"
+// });
