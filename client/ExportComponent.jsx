@@ -36,7 +36,7 @@ import { Session } from 'meteor/session';
 import { Random } from 'meteor/random';
 import { HTTP } from 'meteor/http';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ReactMeteorData, useTracker } from 'meteor/react-meteor-data';
 
 if(Package["meteor/alanning:roles"]){
@@ -59,8 +59,12 @@ import { CollectionManagement } from './CollectionManagement';
 import { makeStyles } from '@material-ui/core/styles';
 
 
+import "ace-builds";
+import AceEditor from "react-ace";
 
-// import AceEditor from "react-ace";
+import "ace-builds/src-noconflict/mode-java";
+import "ace-builds/src-noconflict/theme-github";
+import "ace-builds/src-noconflict/ext-language_tools";
 
 
 //============================================================================
@@ -303,13 +307,26 @@ export function ExportComponent(props){
   const [tableOfContents, setTableOfContents] = useState(false);
   const [coverLetter, setCoverLetter] = useState(false);
 
-  
+  const [editorContent, setEditorContent] = useState("");
+
+
+  useEffect(function(){
+    if(typeof Session.get('exportBuffer') === "object"){
+      setEditorContent( JSON.stringify(Session.get('exportBuffer'), null, 2));
+    } else {
+      setEditorContent( Session.get('exportBuffer'));
+    }
+  }, []);
+
   //----------------------------------------------------------------------------------------------------
   // Trackers
-  
-  let exportBuffer = "";
-  exportBuffer = useTracker(function(){
-    return Session.get('exportBuffer')
+
+  useTracker(function(){
+    if(typeof Session.get('exportBuffer') === "object"){
+      setEditorContent( JSON.stringify(Session.get('exportBuffer'), null, 2));
+    } else {
+      setEditorContent( Session.get('exportBuffer'));
+    }
   }, []);
 
   //----------------------------------------------------------------------------------------------------
@@ -421,8 +438,9 @@ export function ExportComponent(props){
   }
 
   function handleEditorUpdate(newExportBuffer){
-    console.log('handleEditorUpdate', JSON.parse(newExportBuffer))
-    Session.set('exportBuffer', JSON.parse(newExportBuffer))
+    console.log('handleEditorUpdate', newExportBuffer)
+    setEditorContent(newExportBuffer)
+    // Session.set('exportBuffer', JSON.parse(newExportBuffer))
   }
   function downloadExportFile(){
     console.log('downloadExportFile')
@@ -450,23 +468,24 @@ export function ExportComponent(props){
       let blob;
       switch (exportFileType) {
         case 2:  // NDJSON
-          console.log('exportBuffer', exportBuffer)
-          blob = new Blob([exportBuffer], { type: 'application/x-ndjson;charset=utf-8;' })
+          // console.log('exportBuffer', exportBuffer)
+          console.log('editorContent', editorContent)
+          blob = new Blob([editorContent], { type: 'application/x-ndjson;charset=utf-8;' })
           break;      
         case 3:  // CSV
           csvFile = CSV.unparse(Encounters.find().fetch());
           blob = new Blob([csvFile], { type: 'application/csv;charset=utf-8;' })
           break;      
         case 5:  // PHR
-          console.log('exportBuffer', exportBuffer)
-          blob = new Blob([exportBuffer], { type: 'application/phr;charset=utf-8;' })
+        console.log('editorContent', editorContent)
+          blob = new Blob([editorContent], { type: 'application/phr;charset=utf-8;' })
           break;      
         default:
           if(encryptExport){
             // https://atmospherejs.com/jparker/crypto-aes
-            jsonFile = CryptoJS.AES.encrypt(JSON.stringify(exportBuffer), Meteor.userId());
+            jsonFile = CryptoJS.AES.encrypt(JSON.stringify(editorContent), Meteor.userId());
           } else {
-            jsonFile = JSON.stringify(exportBuffer, null, 2);
+            jsonFile = JSON.stringify(editorContent, null, 2);
           }
           blob = new Blob([jsonFile], { type: 'application/json;charset=utf-8;' })
           break;
@@ -877,8 +896,9 @@ export function ExportComponent(props){
           <StyledCard scrollable={true} >
             <CardContent>
             
-              {/* <AceEditor
-                placeholder="Placeholder Text"
+            
+              <AceEditor
+                // placeholder="Placeholder Text"
                 mode="json"
                 theme="tomorrow"
                 name="exportBuffer"
@@ -887,7 +907,8 @@ export function ExportComponent(props){
                 showPrintMargin={false}
                 showGutter={true}
                 highlightActiveLine={true}
-                value={ JSON.stringify(exportBuffer, null, 2) }
+                value={ editorContent }
+                defaultValue={ editorContent }
                 setOptions={{
                   enableBasicAutocompletion: false,
                   enableLiveAutocompletion: false,
@@ -896,14 +917,14 @@ export function ExportComponent(props){
                   tabSize: 2
                 }}
                 style={{width: '100%', position: 'relative', height: editorHeight + 'px', minHeight: '200px', backgroundColor: '#f5f5f5', borderColor: '#ccc', borderRadius: '4px', lineHeight: '16px'}}        
-              /> */}
+              />
 
-              <pre 
+              {/* <pre 
                 id="dropzonePreview"
                 style={{width: '100%', position: 'relative', height: (Session.get('appHeight') - 240).toString() + 'px', borderRadius: '4px', lineHeight: '16px', overflow: 'scroll'}} 
               >
                 { typeof exportBuffer === "object" ? JSON.stringify(exportBuffer, null, 2) : exportBuffer }
-              </pre>
+              </pre> */}
 
             </CardContent>
             <CardActions>

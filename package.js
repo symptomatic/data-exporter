@@ -1,6 +1,6 @@
 Package.describe({
   name: 'symptomatic:data-relay',
-  version: '0.11.8',
+  version: '0.11.9',
   summary: 'Data Relay',
   git: 'http://github.com/symptomatic/data-relay',
   documentation: 'README.md'
@@ -29,3 +29,6 @@ Package.onUse(function(api) {
   api.mainModule('index.jsx', 'client');
 });
 
+Npm.depends({
+  "react-ace": "10.1.0"
+});
