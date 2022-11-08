@@ -51,7 +51,7 @@ import { get, has, set, cloneDeep } from 'lodash';
 import moment from 'moment';
 
 import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
-import { StyledCard, PageCanvas } from 'fhir-starter';
+import { StyledCard, PageCanvas, FhirUtilities } from 'fhir-starter';
 
 import MedicalRecordsExporter from '../lib/MedicalRecordsExporter';
 import { CollectionManagement } from './CollectionManagement';
@@ -398,6 +398,10 @@ export function ExportComponent(props){
         exportContinuityOfCareDoc();
         break;
     }
+
+    if(!get(Meteor, 'settings.public.defaults.exportFile.fileName')){
+      setDownloadFileName((FhirUtilities.pluckName(Patients.findOne())).replace(/\s/g, '') + "-" + get(Patients.findOne(), 'id'));
+    }
   }
   function clearExportBuffer(){
     Session.set('exportBuffer', null);
@@ -429,7 +433,8 @@ export function ExportComponent(props){
   function exportContinuityOfCareDoc(){
     console.log('Export a Continuity Of Care Document');
 
-    MedicalRecordsExporter.exportContinuityOfCareDoc(patientFilter, errorFilter, coverLetter, tableOfContents);
+    // filterString, excludeEnteredInError, includeCoverLetter, includeTableOfContents, patient
+    MedicalRecordsExporter.exportContinuityOfCareDoc(patientFilter, errorFilter, coverLetter, tableOfContents, Patients.findOne());
   }
   function exportBulkData(){
     console.log('Exporting bulk data');

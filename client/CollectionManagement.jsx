@@ -47,6 +47,7 @@ let supportedResources = [
   "Appointment",
   "Bundle",
   "CarePlan",
+  "CareTeam",
   "Claim",
   "Condition",
   "Consent",
@@ -1030,6 +1031,9 @@ export function CollectionManagement(props){
         case "CarePlan":
           iconToRender = <Icon icon={notepad} />
           break;
+        case "CareTeam":
+          iconToRender = <Icon icon={users} />
+          break;
         case "Condition":
           iconToRender = <Icon icon={heartbeat} />
           break;
@@ -1261,7 +1265,7 @@ export function CollectionManagement(props){
         allowed = true;
         break;
       case 'export':        
-        if(data.collections.client[resourceName] > 0){
+        if(data.collections.localClient[resourceName] > 0){
           allowed = true;
         }
         break;
@@ -1401,7 +1405,7 @@ export function CollectionManagement(props){
       { renderIcon("CareTeam") }
       { renderImportCheckmark(toggleCareTeams.bind(this), 'CareTeam') }
       { renderImportButton('CareTeams')} 
-      <TableCell className="collection">Care Plans</TableCell>
+      <TableCell className="collection">Care Teams</TableCell>
       { renderPreview('CareTeam')} 
       { renderClientCount('CareTeam')} 
       { renderLocalClientCount('CareTeam')} 
@@ -2313,7 +2317,7 @@ CollectionManagement.defaultProps = {
   displayDropButton: false,
   displayPreview: false,
   selectedPatientId: '',
-  resourceTypes: ["AllergyIntolerance", "CarePlan", "Condition", "Immunization", "Medication", "MedicationStatement", "Patient", "Procedure"],
+  resourceTypes: ["AllergyIntolerance", "CarePlan", "CareTeam", "Condition", "Immunization", "Medication", "MedicationStatement", "Patient", "Procedure"],
   mode: 'all',  // all, import, export, specific, additive
   exportFileType: 'json', // json, geojson, fhir, csv
   noDataMessage: "No data found.",
