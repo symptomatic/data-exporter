@@ -567,7 +567,7 @@ export function ExportComponent(props){
       case 1:
         console.log('Sending to bundle service...')
         Bundles.insert(Session.get('exportBuffer'), {validation: false, filter: false}, function(error, result){
-          console.log('error', error)
+          console.error('error', error)
           if(result){
             browserHistory.push('/bundles')
           }
@@ -576,7 +576,7 @@ export function ExportComponent(props){
       case 2:
         console.log('Sending to warehouse...')
         Meteor.call('storeBundleToWarehouse', Session.get('exportBuffer'), function(error, result){
-          if(error){console.log('error', error);}
+          if(error){console.error('error', error);}
           Meteor.call('getServerStats', function(error, result){
             if(result){
               Session.set('datalakeStats', result);
@@ -676,7 +676,7 @@ export function ExportComponent(props){
     //   headers: httpHeaders,
     //   data: exportBuffer
     // }, function(error, result){
-    //   if(error){console.log('error', error)}
+    //   if(error){console.error('error', error)}
     //   if(result){console.log('result', result)}
     // })
   }
