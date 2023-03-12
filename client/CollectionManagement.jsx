@@ -432,7 +432,7 @@ export function CollectionManagement(props){
       data.collections.preview[key] = props.preview[key];
     })
 
-    logger.debug('CollectionManagement.data.collections.preview', data.collections.preview)
+    console.debug('CollectionManagement.data.collections.preview', data.collections.preview)
   }
 
   //------------------------------------------------------------
