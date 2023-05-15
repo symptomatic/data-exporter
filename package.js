@@ -1,6 +1,6 @@
 Package.describe({
   name: 'symptomatic:data-relay',
-  version: '0.11.11',
+  version: '0.11.12',
   summary: 'Data Relay',
   git: 'http://github.com/symptomatic/data-relay',
   documentation: 'README.md'
@@ -20,7 +20,7 @@ Package.onUse(function(api) {
   api.use('session');
 
   api.use('clinical:hl7-resource-datatypes@4.0.7');
-  api.use('clinical:hl7-fhir-data-infrastructure@6.28.2');
+  api.use('clinical:hl7-fhir-data-infrastructure@6.32.7');
 
   api.addFiles('server/methods.proxy.js', ['server']);
 
