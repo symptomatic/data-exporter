@@ -603,34 +603,40 @@ export function ExportComponent(props){
     this.setState({encryptExport: !this.state.encryptExport})
   }
 
-  function handleChangeRelayAlgorithm(event, value){
-    console.log('handleChangeRelayAlgorithm', event, value)
+  // function handleChangeRelayAlgorithm(event, value){
+  //   console.log('handleChangeRelayAlgorithm', event, value)
    
 
-    switch (event.target.value) {
-      case 1:
-        setDownloadFileExtension('.json')
-        break;
-      case 2:
-        setDownloadFileExtension('.ndjson')
-        break;
-      case 3:
-        setDownloadFileExtension('.csv')
-        break;
-      case 4:
-        setDownloadFileExtension('.geojson')
-        break;
-      case 5:
-        setDownloadFileExtension('.phr')
-        break;
+  //   switch (event.target.value) {
+  //     case 1:
+  //       setDownloadFileExtension('.json')
+  //       break;
+  //     case 2:
+  //       setDownloadFileExtension('.ndjson')
+  //       break;
+  //     case 3:
+  //       setDownloadFileExtension('.csv')
+  //       break;
+  //     case 4:
+  //       setDownloadFileExtension('.geojson')
+  //       break;
+  //     case 5:
+  //       setDownloadFileExtension('.phr')
+  //       break;
             
-      default:
-        break;
-    }
+  //     default:
+  //       break;
+  //   }
 
-     setRelayUrl(event.target.value)
+  //    setRelayUrl(event.target.value)
+  // }
+  function handleChangeDestination(event, value){
+    console.log('handleChangeDestination', event.target.value)
+    setRelayUrl(event.target.value);
+    Session.set('relayUrl', event.target.value);
   }
   function handleRelay(){
+    console.log("Relay URL: " + JSON.stringify(relayUrl))
     alert("Relay URL: " + JSON.stringify(relayUrl))
 
     let testBundle = {
@@ -655,30 +661,29 @@ export function ExportComponent(props){
     }
 
 
-    Meteor.call('proxyRelay',  relayUrl, exportBuffer, function(error, result){
-      if(error){
-        alert(JSON.stringify(error));
-      }
-      if(result){
-        alert(JSON.stringify(result));
-      }
-    })
-    
-    // let httpHeaders = { headers: {
-    //   'Content-Type': 'application/fhir+json',
-    //   'Access-Control-Allow-Origin': '*'          
-    // }}
-
-    // HTTP.post(relayUrl, {
-    //   npmRequestOptions: {
-    //     rejectUnauthorized: false 
-    //   },
-    //   headers: httpHeaders,
-    //   data: exportBuffer
-    // }, function(error, result){
-    //   if(error){console.error('error', error)}
-    //   if(result){console.log('result', result)}
+    // Meteor.call('proxyRelay',  relayUrl, exportBuffer, function(error, result){
+    //   if(error){
+    //     alert(JSON.stringify(error));
+    //   }
+    //   if(result){
+    //     alert(JSON.stringify(result));
+    //   }
     // })
+    
+    let httpHeaders = { headers: {
+      'Content-Type': 'application/fhir+json',
+      'Access-Control-Allow-Origin': '*'          
+    }}
+
+    console.log('editorContent', editorContent)
+
+    HTTP.post(relayUrl, {
+      headers: httpHeaders,
+      data: JSON.parse(editorContent)
+    }, function(error, result){
+      if(error){console.error('error', error)}
+      if(result){console.log('result', result)}
+    })
   }
 
 
@@ -774,19 +779,15 @@ export function ExportComponent(props){
     <StyledCard scrollable={true} disabled>
       <CardContent>
         <FormControl style={{width: '100%'}}>
-          <InputLabel id="export-algorithm-label">Export Algorithm</InputLabel>
+          <InputLabel id="export-algorithm-label">Destination</InputLabel>
           <Select                  
             value={ relayUrl}
-            onChange={ handleChangeRelayAlgorithm.bind(this) }
+            onChange={ handleChangeDestination.bind(this) }
             fullWidth
           >
             { relayOptions }
-            {/* <MenuItem value={1} id="relay-menu-item-1" key="relay-menu-item-1" >Symptomatic - Bundle Service</MenuItem>
-            <MenuItem value={2} id="relay-menu-item-2" key="relay-menu-item-2" >Symptomatic - Warehouse</MenuItem>
-            <MenuItem value={3} id="relay-menu-item-3" key="relay-menu-item-3" >Other Relay Endpoint</MenuItem> */}
           </Select>
         </FormControl>
-
 
 
         <Input
