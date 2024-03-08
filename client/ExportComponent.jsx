@@ -639,28 +639,6 @@ export function ExportComponent(props){
     console.log("Relay URL: " + JSON.stringify(relayUrl))
     alert("Relay URL: " + JSON.stringify(relayUrl))
 
-    let testBundle = {
-      "resourceType": "Bundle",
-      "type": "searchset",
-      "total": 0,
-      "entry": [
-        {
-          "fullUrl": "Composition/5pju5QqNCuMvJRJvw",
-          "resource": {
-            "resourceType": "Composition",
-            "status": "preliminary",
-            "subject": {
-              "display": "",
-              "reference": ""
-            },
-            "date": "2021-07-22",
-            "title": "Test Bundle"
-          }
-        }
-      ]
-    }
-
-
     // Meteor.call('proxyRelay',  relayUrl, exportBuffer, function(error, result){
     //   if(error){
     //     alert(JSON.stringify(error));
@@ -681,13 +659,37 @@ export function ExportComponent(props){
       headers: httpHeaders,
       data: JSON.parse(editorContent)
     }, function(error, result){
-      if(error){console.error('error', error)}
-      if(result){console.log('result', result)}
+      if(error){console.error(relayUrl + ' error', error)}
+      if(result){
+        console.log(relayUrl + ' result', result)
+        
+        // need to refactor the following into a dynamic method
+        if(result.statusCode === 200){
+          if(get(result, 'data.text')){
+            Session.set('textNormalForm', result.data.text);
+          } else if(get(result, 'data.text.div')){
+            Session.set('textNormalForm', result.data.text.div);
+          }
+        }
+      }      
+    })
+  }
+
+  function handleProxyRelay(){
+    console.log("Relay URL: " + JSON.stringify(relayUrl))
+    alert("Relay URL: " + JSON.stringify(relayUrl))
+
+    Meteor.call('postRelay', relayUrl, {}, JSON.parse(editorContent), Session.get('accountsAccessToken'), JSON.parse(editorContent), function(error, result){
+      if(error){
+        alert(JSON.stringify(error));
+      }
+      if(result){
+        alert(JSON.stringify(result));
+      }
     })
   }
 
 
-  let relayTab;
   let downloadLabel = 'Download!';
   let downloadDisabled = false;
   let fileNameInput;
@@ -775,7 +777,7 @@ export function ExportComponent(props){
   if(get(Meteor, 'settings.public.modules.dataRelay') === true){
     relayElements = <div>
     <CardHeader 
-      title="Step 3b - Relay to Other Server" />
+      title="Step 3b - Send to Server" />
     <StyledCard scrollable={true} disabled>
       <CardContent>
         <FormControl style={{width: '100%'}}>
@@ -803,6 +805,44 @@ export function ExportComponent(props){
           fullWidth
           onClick={handleRelay.bind(this)}
         >Send to Bundle Service</Button> 
+
+      </CardContent>
+    </StyledCard>
+  </div>
+  } 
+  
+  let proxyRelayElements
+  if(get(Meteor, 'settings.public.modules.proxyRelay') === true){
+    proxyRelayElements = <div>
+    <CardHeader 
+      title="Step 3c - Proxy Relay" />
+    <StyledCard scrollable={true} disabled>
+      <CardContent>
+        <FormControl style={{width: '100%'}}>
+          <InputLabel id="export-algorithm-label">Destination</InputLabel>
+          <Select                  
+            value={ relayUrl}
+            onChange={ handleChangeDestination.bind(this) }
+            fullWidth
+          >
+            { relayOptions }
+          </Select>
+        </FormControl>
+
+
+        <Input
+          id='relayEndpointName'
+          name='relayEndpointName'
+          type='text'
+          fullWidth
+          /><br/>
+
+        <Button
+          color="primary"
+          variant="contained" 
+          fullWidth
+          onClick={handleProxyRelay.bind(this)}
+        >Send to Proxy to Relay</Button> 
 
       </CardContent>
     </StyledCard>
@@ -943,7 +983,7 @@ export function ExportComponent(props){
         </Grid>
         <Grid item lg={4} style={rightColumnStyle}>
           <CardHeader 
-            title="Step 3 - Select File Type and Export" />
+            title="Step 3 - Select File Type and Download" />
           <StyledCard scrollable={true} >
             <CardContent>
               { fileNameInput }
@@ -987,7 +1027,8 @@ export function ExportComponent(props){
           </StyledCard>
           <DynamicSpacer />
           { relayElements}
-          
+          <DynamicSpacer />
+          { proxyRelayElements}          
         </Grid>
       </Grid>
     </div>
