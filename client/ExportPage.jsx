@@ -154,7 +154,7 @@ export function ExportPage(props){
   return(
     <PageCanvas id="ExportPage" headerHeight={headerHeight} paddingLeft={20} paddingRight={20} >
       <MuiThemeProvider theme={muiTheme} >
-        <ExportComponent />
+        <ExportComponent history={props.history} />
       </MuiThemeProvider>
     </PageCanvas>
   );

@@ -537,7 +537,7 @@ export function ExportComponent(props){
       }
       
       // desktop 
-      //let dataString = 'data:text/csv;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportBuffer, null, 2));  
+      //let dataString = 'data:text/csv;charset=utxf-8,' + encodeURIComponent(JSON.stringify(exportBuffer, null, 2));  
 
       //let patientName = Meteor.user().displayName();
       //console.log('Generating CCD for ', patientName)
@@ -584,11 +584,6 @@ export function ExportComponent(props){
           });  
         })
 
-        // if(!Questionnaire.findOne(record._id)){
-        //   let questionnaireId = Questionnaire.insert(record, collectionConfig);    
-        //   console.log('Questionnaire created: ' + questionnaireId);
-        // }    
-
       break;
       case 3:
         console.log('Trying to send to relay endpoint...')
@@ -602,34 +597,13 @@ export function ExportComponent(props){
   function toggleEncryptExport(){
     this.setState({encryptExport: !this.state.encryptExport})
   }
-
-  // function handleChangeRelayAlgorithm(event, value){
-  //   console.log('handleChangeRelayAlgorithm', event, value)
-   
-
-  //   switch (event.target.value) {
-  //     case 1:
-  //       setDownloadFileExtension('.json')
-  //       break;
-  //     case 2:
-  //       setDownloadFileExtension('.ndjson')
-  //       break;
-  //     case 3:
-  //       setDownloadFileExtension('.csv')
-  //       break;
-  //     case 4:
-  //       setDownloadFileExtension('.geojson')
-  //       break;
-  //     case 5:
-  //       setDownloadFileExtension('.phr')
-  //       break;
-            
-  //     default:
-  //       break;
-  //   }
-
-  //    setRelayUrl(event.target.value)
-  // }
+  function openPageUrl(url){
+    console.log('openPageUrl', url, props)
+    if(props.history){
+      props.history.replace(url)
+    }
+  }
+  
   function handleChangeDestination(event, value){
     console.log('handleChangeDestination', event.target.value)
     setRelayUrl(event.target.value);
@@ -638,15 +612,6 @@ export function ExportComponent(props){
   function handleRelay(){
     console.log("Relay URL: " + JSON.stringify(relayUrl))
     alert("Relay URL: " + JSON.stringify(relayUrl))
-
-    // Meteor.call('proxyRelay',  relayUrl, exportBuffer, function(error, result){
-    //   if(error){
-    //     alert(JSON.stringify(error));
-    //   }
-    //   if(result){
-    //     alert(JSON.stringify(result));
-    //   }
-    // })
     
     let httpHeaders = { headers: {
       'Content-Type': 'application/fhir+json',
@@ -697,10 +662,11 @@ export function ExportComponent(props){
   let downloadAnchor = <Button 
     onClick={ downloadExportFile.bind(this)}
     style={{position: 'sticky', bottom: '20px', marginBottom: '20px'}}
-    disabled={downloadDisabled}
+    // disabled={downloadDisabled}
     fullWidth
     color='primary'
     variant='contained'
+    disabled={editorContent ? false : true}
   >{downloadLabel}</Button> 
 
 
@@ -802,6 +768,7 @@ export function ExportComponent(props){
         <Button
           color="primary"
           variant="contained" 
+          disabled={editorContent ? false : true}
           fullWidth
           onClick={handleRelay.bind(this)}
         >Send to Bundle Service</Button> 
@@ -811,44 +778,58 @@ export function ExportComponent(props){
   </div>
   } 
   
-  let proxyRelayElements
+  let proxyRelayElements;
   if(get(Meteor, 'settings.public.modules.proxyRelay') === true){
     proxyRelayElements = <div>
-    <CardHeader 
-      title="Step 3c - Proxy Relay" />
-    <StyledCard scrollable={true} disabled>
-      <CardContent>
-        <FormControl style={{width: '100%'}}>
-          <InputLabel id="export-algorithm-label">Destination</InputLabel>
-          <Select                  
-            value={ relayUrl}
-            onChange={ handleChangeDestination.bind(this) }
+      <CardHeader 
+        title="Step 3c - Proxy Relay" />
+      <StyledCard scrollable={true} disabled>
+        <CardContent>
+          <FormControl style={{width: '100%'}}>
+            <InputLabel id="export-algorithm-label">Destination</InputLabel>
+            <Select                  
+              value={ relayUrl}
+              onChange={ handleChangeDestination.bind(this) }
+              fullWidth
+            >
+              { relayOptions }
+            </Select>
+          </FormControl>
+
+
+          <Input
+            id='relayEndpointName'
+            name='relayEndpointName'
+            type='text'
             fullWidth
-          >
-            { relayOptions }
-          </Select>
-        </FormControl>
+            /><br/>
 
+          <Button
+            disabled={editorContent ? false : true}
+            color="primary"
+            variant="contained" 
+            fullWidth
+            onClick={handleProxyRelay.bind(this)}
+          >Send to Proxy to Relay</Button> 
 
-        <Input
-          id='relayEndpointName'
-          name='relayEndpointName'
-          type='text'
-          fullWidth
-          /><br/>
-
-        <Button
-          color="primary"
-          variant="contained" 
-          fullWidth
-          onClick={handleProxyRelay.bind(this)}
-        >Send to Proxy to Relay</Button> 
-
-      </CardContent>
-    </StyledCard>
-  </div>
+        </CardContent>
+      </StyledCard>
+    </div>
   }
 
+  let nextPageElements;
+  if(get(Meteor, 'settings.public.defaults.dataExporterNextPageUrl', false)){
+    nextPageElements = <div>
+      <CardHeader 
+        title="Step 4 - Resume Workflow" />
+      <Button
+        color="primary"
+        variant="contained" 
+        fullWidth
+        onClick={openPageUrl.bind(this, get(Meteor, 'settings.public.defaults.dataExporterNextPageUrl', ''))}
+      >Next</Button> 
+    </div>
+  }
 
   return(
     <div>          
@@ -933,6 +914,7 @@ export function ExportComponent(props){
             variant='contained'
             onClick={ prepareData.bind(this) }
             fullWidth
+            disabled={editorContent ? true : false}
           >Prepare data</Button>   
         </Grid>  
         <Grid item lg={4} style={{width: '100%', height: editCardHeight + 'px', marginBottom: '84px'}}>
@@ -982,10 +964,14 @@ export function ExportComponent(props){
           
         </Grid>
         <Grid item lg={4} style={rightColumnStyle}>
+          { nextPageElements}          
+          <DynamicSpacer />
+
           <CardHeader 
             title="Step 3 - Select File Type and Download" />
           <StyledCard scrollable={true} >
             <CardContent>
+
               { fileNameInput }
 
               {/* <FormControl style={{width: '100%', paddingBottom: '20px'}}>
