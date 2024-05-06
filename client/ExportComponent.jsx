@@ -404,7 +404,7 @@ export function ExportComponent(props){
     }
   }
   function clearExportBuffer(){
-    Session.set('exportBuffer', null);
+    Session.set('exportBuffer', "");
   }
   function exportGeojson(){
     console.log('Exporting Geojson file.')
@@ -490,7 +490,11 @@ export function ExportComponent(props){
             // https://atmospherejs.com/jparker/crypto-aes
             jsonFile = CryptoJS.AES.encrypt(JSON.stringify(editorContent), Meteor.userId());
           } else {
-            jsonFile = JSON.stringify(editorContent, null, 2);
+            if(typeof editorContent === "object"){
+              jsonFile = JSON.stringify(editorContent, null, 2);
+            } else {
+              jsonFile = editorContent;
+            }
           }
           blob = new Blob([jsonFile], { type: 'application/json;charset=utf-8;' })
           break;
@@ -819,6 +823,7 @@ export function ExportComponent(props){
 
   let nextPageElements;
   if(get(Meteor, 'settings.public.defaults.dataExporterNextPageUrl', false)){
+    let searchParams = new URLSearchParams(window.location.search);
     nextPageElements = <div>
       <CardHeader 
         title="Step 4 - Resume Workflow" />
@@ -826,7 +831,7 @@ export function ExportComponent(props){
         color="primary"
         variant="contained" 
         fullWidth
-        onClick={openPageUrl.bind(this, get(Meteor, 'settings.public.defaults.dataExporterNextPageUrl', ''))}
+        onClick={openPageUrl.bind(this, searchParams.get('next') ? searchParams.get('next') : get(Meteor, 'settings.public.defaults.dataExporterNextPageUrl', ''))}
       >Next</Button> 
     </div>
   }
