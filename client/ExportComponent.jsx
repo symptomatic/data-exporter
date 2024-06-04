@@ -303,9 +303,11 @@ export function ExportComponent(props){
   const [appendDate, setAppendDate ] = useState(get(Meteor, 'settings.public.defaults.exportFile.appendDate', false));
   const [patientFilter, setPatientFilter] = useState("");
   const [errorFilter, setToggleErrorFilter] = useState(false);
+  const [patientFilterToggle, setTogglePatientFilter] = useState(false);
 
   const [tableOfContents, setTableOfContents] = useState(false);
   const [coverLetter, setCoverLetter] = useState(false);
+  const [patientSummary, setPatientSummary] = useState(false);
 
   const [editorContent, setEditorContent] = useState("");
 
@@ -328,6 +330,12 @@ export function ExportComponent(props){
       setEditorContent( Session.get('exportBuffer'));
     }
   }, []);
+
+  useTracker(function(){
+    patientFilter(Session.get('selectedPatientId'))
+  }, []);
+
+  
 
   //----------------------------------------------------------------------------------------------------
   // Methods
@@ -367,9 +375,17 @@ export function ExportComponent(props){
     console.log('handleToggleErrorFilter', isChecked)
     setToggleErrorFilter(isChecked)
   }
+  function handleTogglePatientFilter(event, isChecked){
+    console.log('handleTogglePatientFilter', isChecked)
+    setTogglePatientFilter(isChecked)
+  }
   function handleToggleCoverLetter(event, isChecked){
     console.log('handleToggleCoverLetter', isChecked)
     setCoverLetter(isChecked)
+  }
+  function handleTogglePatientSummary(event, isChecked){
+    console.log('handleTogglePatientSummary', isChecked)
+    setPatientSummary(isChecked)
   }
   function handleToggleTableOfContents(event, isChecked){
     console.log('handleToggleTableOfContents', isChecked)
@@ -434,7 +450,7 @@ export function ExportComponent(props){
     console.log('Export a Continuity Of Care Document');
 
     // filterString, excludeEnteredInError, includeCoverLetter, includeTableOfContents, patient
-    MedicalRecordsExporter.exportContinuityOfCareDoc(patientFilter, errorFilter, coverLetter, tableOfContents, Patients.findOne());
+    MedicalRecordsExporter.exportContinuityOfCareDoc(patientFilter, errorFilter, coverLetter, tableOfContents, patientSummary, Patients.findOne());
   }
   function exportBulkData(){
     console.log('Exporting bulk data');
@@ -866,6 +882,10 @@ export function ExportComponent(props){
                 onChange={ handleToggleCoverLetter.bind(this)} 
               />Ensure cover letter exists (Composition) <br />
               <Checkbox 
+                checked={coverLetter} 
+                onChange={ handleTogglePatientSummary.bind(this)} 
+              />Ensure International Patient Summary exists (Composition) <br />
+              <Checkbox 
                 checked={tableOfContents} 
                 onChange={ handleToggleTableOfContents.bind(this)} 
               />Ensure table of contents exists (DocumentManifest)
@@ -894,6 +914,14 @@ export function ExportComponent(props){
           <DynamicSpacer />
           <StyledCard scrollable={true} >
             <CardContent>
+              <Checkbox 
+                defaultChecked={false} 
+                onChange={ handleToggleErrorFilter.bind(this)} 
+              />Filter Entered-in-Error records
+              <Checkbox 
+                defaultChecked={patientFilterToggle} 
+                onChange={ handleTogglePatientFilter.bind(this)} 
+              />Filter By Patient
               <FormControl style={{width: '100%', marginTop: '20px', marginBottom: '20px'}}>
                 <InputLabel id="patient-filter-label">Patient Filter</InputLabel>
                 <Input
@@ -901,15 +929,12 @@ export function ExportComponent(props){
                   name='patientFilter'
                   placeholder={"Patient/" + Random.id()}
                   type='text'
-                  value={patientFilter}
+                  value={patientFilterToggle ? patientFilter : ""}
+                  disabled={!patientFilterToggle}
                   onChange={ handleChangePatientFilter.bind(this) }
                   fullWidth
                 />
               </FormControl>
-              <Checkbox 
-                defaultChecked={false} 
-                onChange={ handleToggleErrorFilter.bind(this)} 
-              />Filter Entered-in-Error records
             </CardContent>
           </StyledCard>
           <DynamicSpacer />

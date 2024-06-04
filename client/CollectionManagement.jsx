@@ -55,6 +55,7 @@ let supportedResources = [
   "Communication",
   "CommunicationRequest",
   "CommunicationResponse",
+  "Composition",
   "ClinicalImpression",
   "ClinicalDocument",
   "Device",
@@ -107,6 +108,7 @@ let importToggles = {
   Communication: true,
   CommunicationRequest: true,
   CommunicationResponse: true,
+  Composition: true,
   ClinicalImpression: true,
   ClinicalDocument: true,
   Device: true,
@@ -160,6 +162,7 @@ let exportToggles = {
   Communication: false,
   CommunicationRequest: false,
   CommunicationResponse: false,
+  Composition: false,
   ClinicalImpression: false,
   Device: false,
   DiagnosticReport: false,
@@ -231,6 +234,7 @@ export function CollectionManagement(props){
         Communication: 0,
         CommunicationRequest: 0,
         CommunicationResponse: 0,
+        Composition: 0,
         Consent: 0,
         Contract: 0,
         ClinicalImpression: 0,
@@ -279,6 +283,7 @@ export function CollectionManagement(props){
         Communication: 0,
         CommunicationRequest: 0,
         CommunicationResponse: 0,
+        Composition: 0,
         Consent: 0,
         Contract: 0,
         ClinicalImpression: 0,
@@ -331,6 +336,7 @@ export function CollectionManagement(props){
         Communication: 0,
         CommunicationRequest: 0,
         CommunicationResponse: 0,
+        Composition: 0,
         Device: 0,
         DiagnosticReport: 0,
         DocumentReference: 0,
@@ -373,6 +379,7 @@ export function CollectionManagement(props){
         CareTeam: false,      
         Claim: false,
         ClinicalDocument: false,
+        Composition: false,
         Condition: false,
         Consent: false,
         Contract: false,
@@ -505,6 +512,7 @@ export function CollectionManagement(props){
     setToggleImportState('Communication', isInputChecked)
     setToggleImportState('CommunicationResponse', isInputChecked)
     setToggleImportState('CommunicationRequest', isInputChecked)
+    setToggleImportState('Composition', isInputChecked)
     setToggleImportState('ClinicalImpression', isInputChecked)
     setToggleImportState('Device', isInputChecked)
     setToggleImportState('DiagnosticReport', isInputChecked)
@@ -586,6 +594,9 @@ export function CollectionManagement(props){
   function toggleCommunicationRequests(event, isInputChecked){    
     setToggleImportState('CommunicationRequest', isInputChecked)
   };
+  function toggleCompositions(event, isInputChecked){
+    setToggleImportState('Composition', isInputChecked)
+  }
   function toggleClinicalImpressions(event, isInputChecked){    
     setToggleImportState('ClinicalImpression', isInputChecked)
   };
@@ -717,6 +728,7 @@ export function CollectionManagement(props){
     setToggleExportState('Communication', isInputChecked)
     setToggleExportState('CommunicationResponse', isInputChecked)
     setToggleExportState('CommunicationRequest', isInputChecked)
+    setToggleExportState('Composition', isInputChecked)
     setToggleExportState('ClinicalImpression', isInputChecked)
     setToggleExportState('Device', isInputChecked)
     setToggleExportState('DiagnosticReport', isInputChecked)
@@ -798,6 +810,9 @@ export function CollectionManagement(props){
   };
   function toggleCommunicationRequestsExport(event, isInputChecked){    
     setToggleExportState('CommunicationRequest', isInputChecked)
+  };
+  function toggleCompositionsExport(event, isInputChecked){
+    setToggleExportState('Composition', isInputChecked)
   };
   function toggleClinicalImpressionsExport(event, isInputChecked){    
     setToggleExportState('ClinicalImpression', isInputChecked)
@@ -1467,6 +1482,24 @@ export function CollectionManagement(props){
       { renderDropButton('ClinicalImpression')} 
       { renderExportButton('ClinicalImpressions')} 
       { renderExportCheckmark(toggleClinicalImpressionsExport.bind(this), 'ClinicalImpression') }
+    </TableRow>
+  }
+
+  let compositionsRow;
+  if(determineRowVisible("Composition")){
+    shouldDisplayNoDataRow = false;
+    compositionsRow = <TableRow className='dataManagementRow' hover={true}>
+      { renderIcon("Composition") }
+      { renderImportCheckmark(toggleCompositions.bind(this), 'Composition') }
+      { renderImportButton('Compositions')} 
+      <TableCell className="collection">Compositions</TableCell>
+      { renderPreview('Composition')} 
+      { renderClientCount('Composition')} 
+      { renderLocalClientCount('Composition')} 
+      { renderPubSub('Composition')} 
+      { renderDropButton('Composition')} 
+      { renderExportButton('Compositions')} 
+      { renderExportCheckmark(toggleCompositionsExport.bind(this), 'Composition') }
     </TableRow>
   }
 
@@ -2222,6 +2255,7 @@ export function CollectionManagement(props){
         { claimsRow }
         { clinicalDocumentsRow }
         { clinicalImpressionsRow }
+        { compositionsRow }
         { conditionsRow }
         { consentsRow }
         { contractsRow }
@@ -2317,7 +2351,7 @@ CollectionManagement.defaultProps = {
   displayDropButton: false,
   displayPreview: false,
   selectedPatientId: '',
-  resourceTypes: ["AllergyIntolerance", "CarePlan", "CareTeam", "Condition", "Immunization", "Medication", "MedicationStatement", "Patient", "Procedure"],
+  resourceTypes: ["AllergyIntolerance", "CarePlan", "CareTeam", "Composition", "Condition", "Immunization", "Medication", "MedicationStatement", "Patient", "Procedure"],
   mode: 'all',  // all, import, export, specific, additive
   exportFileType: 'json', // json, geojson, fhir, csv
   noDataMessage: "No data found.",
