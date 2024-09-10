@@ -1,7 +1,7 @@
 // https://www.npmjs.com/package/react-dropzone-component
 // http://www.dropzonejs.com/
  
-import { Button, CardContent, CardHeader, Grid, Tab, Tabs, Typography } from '@material-ui/core';
+import { Button, CardContent, CardHeader, Grid, Tab, Tabs, Typography } from '@mui/material';
 import PropTypes from 'prop-types';
 
 import { Meteor } from 'meteor/meteor';
@@ -18,8 +18,7 @@ import { get } from 'lodash';
 
 import MedicalRecordImporter from '../lib/MedicalRecordImporter';
 
-import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
-import { StyledCard, PageCanvas } from 'fhir-starter';
+import { MuiThemeProvider, createTheme } from '@mui/material/styles';
 
 
 import { render } from "react-dom";
@@ -73,7 +72,7 @@ import { render } from "react-dom";
     theme = Object.assign(theme, get(Meteor, 'settings.public.theme.palette'));
   }
 
-  const muiTheme = createMuiTheme({
+  const muiTheme = createTheme({
     typography: {
       useNextVariants: true,
     },

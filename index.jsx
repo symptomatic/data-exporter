@@ -6,7 +6,7 @@ import ExportPage from './client/ExportPage';
 let DynamicRoutes = [{
   'name': 'Export',
   'path': '/export-data',
-  'component': ExportPage,
+  'element': <ExportPage />,
   'requireAuth': true
 }];
 

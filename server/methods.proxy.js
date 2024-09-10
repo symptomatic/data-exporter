@@ -4,35 +4,7 @@ import { check } from 'meteor/check';
 import { HTTP } from 'meteor/http';
 import { get } from 'lodash';
 
-import FhirUtilities from 'meteor/clinical:hl7-fhir-data-infrastructure';
 
-import { 
-  AllergyIntolerances,
-  Bundles,
-  CarePlans,
-  Conditions,
-  Communications,
-  CommunicationRequests,
-  CommunicationResponses,
-  Devices,
-  Encounters, 
-  Immunizations,
-  Lists,
-  Locations,
-  Medications,
-  MedicationOrders,
-  MedicationStatements,
-  MessageHeaders,
-  Measures,
-  MeasureReports,
-  Organizations,
-  Observations, 
-  Patients,
-  Procedures,
-  Questionnaires,
-  QuestionnaireResponses,
-  Tasks,
-} from 'meteor/clinical:hl7-fhir-data-infrastructure';
 
 //---------------------------------------------------------------------------
 // Collections
@@ -48,31 +20,62 @@ if(Meteor.isClient){
   Collections = window;
 }
 if(Meteor.isServer){
-  Collections.AllergyIntolerances = AllergyIntolerances;
-  Collections.Bundles = Bundles;
-  Collections.CarePlans = CarePlans;
-  Collections.Conditions = Conditions;
-  Collections.Communications = Communications;
-  Collections.CommunicationRequests = CommunicationRequests;
-  Collections.CommunicationResponses = CommunicationResponses;
-  Collections.Devices = Devices;  
-  Collections.Encounters = Encounters;
-  Collections.Immunizations = Immunizations;
-  Collections.Lists = Lists;
-  Collections.Locations = Locations;
-  Collections.Medications = Medications;
-  Collections.MedicationOrders = MedicationOrders;
-  Collections.MedicationStatements = MedicationStatements;
-  Collections.MessageHeaders = MessageHeaders;
-  Collections.Measures = Measures;
-  Collections.MeasureReports = MeasureReports;
-  Collections.Organizations = Organizations;
-  Collections.Observations = Observations;
-  Collections.Patients = Patients;
-  Collections.Procedures = Procedures;
-  Collections.Questionnaires = Questionnaires;
-  Collections.QuestionnaireResponses = QuestionnaireResponses;
-  Collections.Tasks = Tasks;
+  // window.Collections.QuestionnaireResponses || {};
+
+  // Collections.AllergyIntolerances = AllergyIntolerances;
+  // Collections.Bundles = Bundles;
+  // Collections.CarePlans = CarePlans;
+  // Collections.Conditions = Conditions;
+  // Collections.Communications = Communications;
+  // Collections.CommunicationRequests = CommunicationRequests;
+  // Collections.CommunicationResponses = CommunicationResponses;
+  // Collections.Devices = Devices;  
+  // Collections.Encounters = Encounters;
+  // Collections.Immunizations = Immunizations;
+  // Collections.Lists = Lists;
+  // Collections.Locations = Locations;
+  // Collections.Medications = Medications;
+  // Collections.MedicationOrders = MedicationOrders;
+  // Collections.MedicationStatements = MedicationStatements;
+  // Collections.MessageHeaders = MessageHeaders;
+  // Collections.Measures = Measures;
+  // Collections.MeasureReports = MeasureReports;
+  // Collections.Organizations = Organizations;
+  // Collections.Observations = Observations;
+  // Collections.Patients = Patients;
+  // Collections.Procedures = Procedures;
+  // Collections.Questionnaires = Questionnaires;
+  // Collections.QuestionnaireResponses = QuestionnaireResponses;
+  // Collections.Tasks = Tasks;
+
+  Meteor.startup(function(){
+    Collections.AllergyIntolerances = global.Collections.AllergyIntolerances || {};
+    Collections.Bundles = global.Collections.Bundles || {};
+    Collections.CarePlans = global.Collections.CarePlans || {};
+    Collections.Conditions = global.Collections.Conditions || {};
+    Collections.Communications = global.Collections.Communications || {};
+    Collections.CommunicationRequests = global.Collections.CommunicationRequests || {};
+    Collections.CommunicationResponses = global.Collections.CommunicationResponses || {};
+    Collections.Devices = global.Collections.Devices || {} 
+    Collections.Encounters = global.Collections.Encounters || {};
+    Collections.Immunizations = global.Collections.Immunizations || {};
+    Collections.Lists = global.Collections.Lists || {};
+    Collections.Locations = global.Collections.Locations || {};
+    Collections.Medications = global.Collections.Medications || {};
+    Collections.MedicationOrders = global.Collections.MedicationOrders || {};
+    Collections.MedicationStatements = global.Collections.MedicationStatements || {};
+    Collections.MessageHeaders = global.Collections.MessageHeaders || {};
+    Collections.Measures = global.Collections.Measures || {};
+    Collections.MeasureReports = global.Collections.MeasureReports || {};
+    Collections.Organizations = global.Collections.Organizations || {};
+    Collections.Observations = global.Collections.Observations || {};
+    Collections.Patients = global.Collections.Patients || {};
+    Collections.Procedures = global.Collections.Procedures || {};
+    Collections.Questionnaires = global.Collections.Questionnaires || {};
+    Collections.QuestionnaireResponses = global.Collections.QuestionnaireResponses || {};
+    Collections.Tasks = global.Collections.Tasks || {};
+  })
+
 }
 
 function pluralizeResourceName(resourceType){

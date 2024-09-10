@@ -9,14 +9,13 @@ import { Meteor } from 'meteor/meteor';
 
 import { get } from 'lodash';
 
-import { StyledCard, PageCanvas } from 'fhir-starter';
 import { ExportComponent } from './ExportComponent';
 
 
 //============================================================================
 //Global Theming 
 
-import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
+import { MuiThemeProvider, createTheme } from '@mui/material/styles';
 
 
 let theme = {
@@ -49,7 +48,7 @@ if(get(Meteor, 'settings.public.theme.palette')){
   theme = Object.assign(theme, get(Meteor, 'settings.public.theme.palette'));
 }
 
-const muiTheme = createMuiTheme({
+const muiTheme = createTheme({
   typography: {
     useNextVariants: true,
   },
@@ -146,17 +145,19 @@ export function ExportPage(props){
 
   // logger.debug('Navigated to ExportPage', data);
 
-  let headerHeight = LayoutHelpers.calcHeaderHeight();
-  let formFactor = LayoutHelpers.determineFormFactor();
-  let paddingWidth = LayoutHelpers.calcCanvasPaddingWidth();
+  let headerHeight = Meteor.LayoutHelpers.calcHeaderHeight();
+  let formFactor = Meteor.LayoutHelpers.determineFormFactor();
+  let paddingWidth = Meteor.LayoutHelpers.calcCanvasPaddingWidth();
 
-
+  
   return(
-    <PageCanvas id="ExportPage" headerHeight={headerHeight} paddingLeft={20} paddingRight={20} >
-      <MuiThemeProvider theme={muiTheme} >
+    <div id="ExportPage" >
+      <ExportComponent history={props.history} />
+
+      {/* <MuiThemeProvider theme={muiTheme} >
         <ExportComponent history={props.history} />
-      </MuiThemeProvider>
-    </PageCanvas>
+      </MuiThemeProvider> */}
+    </div>
   );
 }
 

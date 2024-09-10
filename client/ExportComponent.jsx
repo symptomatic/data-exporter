@@ -4,6 +4,7 @@
 import { 
   Grid, 
   Button, 
+  Card,
   CardContent, 
   CardHeader, 
   CardActions,
@@ -20,7 +21,7 @@ import {
   Input,
   SelectField,
   Checkbox
-} from '@material-ui/core';
+} from '@mui/material';
 
 // import Accordion from '@material-ui/Accordion';
 // import AccordionSummary from '@material-ui/AccordionSummary';
@@ -50,13 +51,8 @@ import { browserHistory } from 'react-router';
 import { get, has, set, cloneDeep } from 'lodash';
 import moment from 'moment';
 
-import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
-import { StyledCard, PageCanvas, FhirUtilities } from 'fhir-starter';
-
 import MedicalRecordsExporter from '../lib/MedicalRecordsExporter';
 import { CollectionManagement } from './CollectionManagement';
-
-import { makeStyles } from '@material-ui/core/styles';
 
 
 import "ace-builds";
@@ -65,6 +61,17 @@ import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-java";
 import "ace-builds/src-noconflict/theme-github";
 import "ace-builds/src-noconflict/ext-language_tools";
+
+import "ace-builds/src-noconflict/theme-tomorrow";
+import "ace-builds/src-noconflict/theme-monokai";
+
+//============================================================================
+// Helper Components 
+
+let Patients;
+Meteor.startup(function(){
+  Patients = Meteor.Collections.Patients;
+})
 
 
 //============================================================================
@@ -110,53 +117,53 @@ function DynamicSpacer(props){
     theme = Object.assign(theme, get(Meteor, 'settings.public.theme.palette'));
   }
 
-  const muiTheme = createMuiTheme({
-    typography: {
-      useNextvariants: true
-    },
-    palette: {
-      primary: {
-        main: theme.primaryColor,
-        contrastText: theme.primaryText
-      },
-      secondary: {
-        main: theme.secondaryColor,
-        contrastText: theme.errorText
-      },
-      appBar: {
-        main: theme.appBarColor,
-        contrastText: theme.appBarTextColor
-      },
-      cards: {
-        main: theme.cardColor,
-        contrastText: theme.cardTextColor
-      },
-      paper: {
-        main: theme.paperColor,
-        contrastText: theme.paperTextColor
-      },
-      error: {
-        main: theme.errorColor,
-        contrastText: theme.secondaryText
-      },
-      background: {
-        default: theme.backgroundCanvas
-      },
-      contrastThreshold: 3,
-      tonalOffset: 0.2
-    }
-  });
+  // const muiTheme = createTheme({
+  //   typography: {
+  //     useNextvariants: true
+  //   },
+  //   palette: {
+  //     primary: {
+  //       main: theme.primaryColor,
+  //       contrastText: theme.primaryText
+  //     },
+  //     secondary: {
+  //       main: theme.secondaryColor,
+  //       contrastText: theme.errorText
+  //     },
+  //     appBar: {
+  //       main: theme.appBarColor,
+  //       contrastText: theme.appBarTextColor
+  //     },
+  //     cards: {
+  //       main: theme.cardColor,
+  //       contrastText: theme.cardTextColor
+  //     },
+  //     paper: {
+  //       main: theme.paperColor,
+  //       contrastText: theme.paperTextColor
+  //     },
+  //     error: {
+  //       main: theme.errorColor,
+  //       contrastText: theme.secondaryText
+  //     },
+  //     background: {
+  //       default: theme.backgroundCanvas
+  //     },
+  //     contrastThreshold: 3,
+  //     tonalOffset: 0.2
+  //   }
+  // });
 
 
-  const useStyles = makeStyles((theme) => ({
-    root: {
-      width: '100%',
-    },
-    heading: {
-      fontSize: theme.typography.pxToRem(15),
-      fontWeight: theme.typography.fontWeightRegular,
-    },
-  }));
+  // const useStyles = makeStyles((theme) => ({
+  //   root: {
+  //     width: '100%',
+  //   },
+  //   heading: {
+  //     fontSize: theme.typography.pxToRem(15),
+  //     fontWeight: theme.typography.fontWeightRegular,
+  //   },
+  // }));
 
 //===================================================================================================================
 // Cordova  
@@ -276,12 +283,22 @@ TabContainer.propTypes = {
 };
 
 
+//====================================================================================
+// Shared Components
+
+let useTheme;
+Meteor.startup(function(){
+  useTheme = Meteor.useTheme;
+})
+
+
 //===================================================================================================================
 // Main Component  
 
 export function ExportComponent(props){
 
-  const classes = useStyles();
+  // const classes = useStyles();
+  const { theme, toggleTheme } = useTheme();
 
   if(!logger && window.logger){
     logger = window.logger;
@@ -332,7 +349,7 @@ export function ExportComponent(props){
   }, []);
 
   useTracker(function(){
-    patientFilter(Session.get('selectedPatientId'))
+    setPatientFilter(Session.get('selectedPatientId'))
   }, []);
 
   
@@ -416,7 +433,7 @@ export function ExportComponent(props){
     }
 
     if(!get(Meteor, 'settings.public.defaults.exportFile.fileName')){
-      setDownloadFileName((FhirUtilities.pluckName(Patients.findOne())).replace(/\s/g, '') + "-" + get(Patients.findOne(), 'id'));
+      setDownloadFileName((Meteor.FhirUtilities.pluckName(Patients.findOne())).replace(/\s/g, '') + "-" + get(Patients.findOne(), 'id'));
     }
   }
   function clearExportBuffer(){
@@ -764,7 +781,7 @@ export function ExportComponent(props){
     relayElements = <div>
     <CardHeader 
       title="Step 3b - Send to Server" />
-    <StyledCard scrollable={true} disabled>
+    <Card disabled>
       <CardContent>
         <FormControl style={{width: '100%'}}>
           <InputLabel id="export-algorithm-label">Destination</InputLabel>
@@ -794,7 +811,7 @@ export function ExportComponent(props){
         >Send to Bundle Service</Button> 
 
       </CardContent>
-    </StyledCard>
+    </Card>
   </div>
   } 
   
@@ -803,7 +820,7 @@ export function ExportComponent(props){
     proxyRelayElements = <div>
       <CardHeader 
         title="Step 3c - Proxy Relay" />
-      <StyledCard scrollable={true} disabled>
+      <Card disabled>
         <CardContent>
           <FormControl style={{width: '100%'}}>
             <InputLabel id="export-algorithm-label">Destination</InputLabel>
@@ -833,7 +850,7 @@ export function ExportComponent(props){
           >Send to Proxy to Relay</Button> 
 
         </CardContent>
-      </StyledCard>
+      </Card>
     </div>
   }
 
@@ -858,7 +875,7 @@ export function ExportComponent(props){
         <Grid item lg={4} style={{width: '100%', marginBottom: '84px'}}>
         <CardHeader 
             title="Step 0 - Select Algorithm" />
-          <StyledCard scrollable={true} >
+          <Card >
             <CardContent>
               <FormControl style={{width: '100%', paddingBottom: '20px'}}>
                 <InputLabel id="export-algorithm-label">Export Algorithm</InputLabel>
@@ -891,13 +908,13 @@ export function ExportComponent(props){
               />Ensure table of contents exists (DocumentManifest)
 
             </CardContent>
-          </StyledCard>
+          </Card>
           <DynamicSpacer />
 
 
           <CardHeader 
             title="Step 1 - Select Data To Export" />
-          <StyledCard scrollable={true} >
+          <Card >
             <CardContent>
               <CollectionManagement
                 displayImportCheckmarks={false}
@@ -910,9 +927,9 @@ export function ExportComponent(props){
 
               
             </CardContent>
-          </StyledCard>
+          </Card>
           <DynamicSpacer />
-          <StyledCard scrollable={true} >
+          <Card >
             <CardContent>
               <Checkbox 
                 defaultChecked={false} 
@@ -936,7 +953,7 @@ export function ExportComponent(props){
                 />
               </FormControl>
             </CardContent>
-          </StyledCard>
+          </Card>
           <DynamicSpacer />
           <Button 
             id='exportCcdBtn' 
@@ -951,14 +968,14 @@ export function ExportComponent(props){
           <CardHeader 
             title="Step 2 - Review and Edit" />
 
-          <StyledCard scrollable={true} >
+          <Card >
             <CardContent>
             
             
               <AceEditor
                 // placeholder="Placeholder Text"
                 mode="json"
-                theme="tomorrow"
+                theme={theme === 'light' ? "tomorrow" : "monokai"}
                 name="exportBuffer"
                 onChange={ handleEditorUpdate.bind(this) }
                 fontSize={14}
@@ -974,7 +991,7 @@ export function ExportComponent(props){
                   showLineNumbers: true,
                   tabSize: 2
                 }}
-                style={{width: '100%', position: 'relative', height: editorHeight + 'px', minHeight: '200px', backgroundColor: '#f5f5f5', borderColor: '#ccc', borderRadius: '4px', lineHeight: '16px'}}        
+                style={{width: '100%', position: 'relative', height: editorHeight + 'px', minHeight: '200px', borderRadius: '4px', lineHeight: '16px'}}        
               />
 
               {/* <pre 
@@ -988,7 +1005,7 @@ export function ExportComponent(props){
             <CardActions>
               <Button id="clearExportBuffer" color="primary" onClick={clearExportBuffer.bind(this)} >Clear</Button>            
             </CardActions>
-          </StyledCard>
+          </Card>
           <DynamicSpacer />
 
           
@@ -999,7 +1016,7 @@ export function ExportComponent(props){
 
           <CardHeader 
             title="Step 3 - Select File Type and Download" />
-          <StyledCard scrollable={true} >
+          <Card >
             <CardContent>
 
               { fileNameInput }
@@ -1040,7 +1057,7 @@ export function ExportComponent(props){
               { downloadAnchor }             
               <a id="downloadAnchorElement" style={{display: "none"}} ></a>   
             </CardContent>
-          </StyledCard>
+          </Card>
           <DynamicSpacer />
           { relayElements}
           <DynamicSpacer />
