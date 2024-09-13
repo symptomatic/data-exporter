@@ -12,10 +12,10 @@ Package.onUse(function(api) {
   api.use('meteor');
   api.use('webapp');
   api.use('ecmascript');
-  api.use('react-meteor-data');
   api.use('session');
   api.use('mongo');    
-  api.use('http');    
+  api.use('react-meteor-data@3.0.1');
+  api.use('http@1.0.1');    
 
   api.use('clinical:hl7-resource-datatypes@4.0.7');
 
