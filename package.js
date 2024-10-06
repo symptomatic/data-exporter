@@ -1,6 +1,6 @@
 Package.describe({
   name: 'symptomatic:data-relay',
-  version: '0.12.0',
+  version: '0.12.1',
   summary: 'Data Relay',
   git: 'http://github.com/symptomatic/data-relay',
   documentation: 'README.md'

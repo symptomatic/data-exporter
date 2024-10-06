@@ -870,9 +870,9 @@ export function ExportComponent(props){
   }
 
   return(
-    <div>          
+    <div style={{"height": window.innerHeight, "overflow": "scroll", "paddingBottom": "128px" }}>          
       <Grid container spacing={3} >        
-        <Grid item lg={4} style={{width: '100%', marginBottom: '84px'}}>
+        <Grid item lg={4} style={{marginBottom: '84px'}}>
         <CardHeader 
             title="Step 0 - Select Algorithm" />
           <Card >
