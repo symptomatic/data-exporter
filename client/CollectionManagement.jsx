@@ -1,7 +1,7 @@
 // https://www.npmjs.com/package/react-dropzone-component
 // http://www.dropzonejs.com/
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useTracker } from 'meteor/react-meteor-data';
 import PropTypes from 'prop-types';
 
@@ -39,11 +39,13 @@ import {ic_link} from 'react-icons-kit/md/ic_link'
 import {ic_wifi_tethering} from 'react-icons-kit/md/ic_wifi_tethering'
 
 import { get } from 'lodash';
+import { Task } from '@mui/icons-material';
 
 let supportedResources = [
   "AllergyIntolerance",
   "Appointment",
   "Bundle",
+  "BodyStructure",
   "CarePlan",
   "CareTeam",
   "Claim",
@@ -64,6 +66,8 @@ let supportedResources = [
   "ExplanationOfBenefit",
   "FamilyMemberHistory",
   "Goal",
+  "Group",
+  "HealthcareService",
   "Immunization",
   "ImagingStudy",
   "List",
@@ -71,7 +75,9 @@ let supportedResources = [
   "Measure",
   "MeasureReport",
   "Medication",
+  "MedicationAdministration",
   "MedicationOrder",
+  "MedicationRequest",
   "MedicationStatement",
   "MessageHeader",
   "Observation",
@@ -86,8 +92,11 @@ let supportedResources = [
   "RelatedPerson",
   "RiskAssessment",
   "Schedule",
+  "SearchParameter",
   "ServiceRequest",
   "Sequence",
+  "Specimen",
+  "StructureDefinition",
   "Task",
   "ValueSet"
 ]
@@ -97,6 +106,7 @@ let importToggles = {
   AllergyIntolerance: true,
   Appointment: true,
   Bundle: true,
+  BodyStructure: true,
   CarePlan: true,          
   CareTeam: true,
   Claim: true,
@@ -117,6 +127,8 @@ let importToggles = {
   ExplanationOfBenefit: true,
   FamilyMemberHistory: true,
   Goal: true,
+  Group: true,
+  HealthcareService: true,
   Immunization: true,
   ImagingStudy: true,
   List: true,
@@ -124,7 +136,9 @@ let importToggles = {
   Measure: true,
   MeasureReport: true,
   Medication: true,
+  MedicationAdministration: true,
   MedicationOrder: true,
+  MedicationRequest: true,
   MedicationStatement: true,
   MessageHeader: true,
   Observation: true,
@@ -139,8 +153,12 @@ let importToggles = {
   RelatedPerson: true,
   RiskAssessment: true,
   Schedule: true,
+  SearchParameter: true,
+  Schedule: true,
   ServiceRequest: true,
   Sequence: true,
+  Specimen: true,
+  StructureDefinition: true,
   Task: true,
   ValueSet: true,
   zero: true
@@ -149,7 +167,8 @@ let exportToggles = {
   exportsAll: false,
   AllergyIntolerance: false,
   Appointment: false,
-  Bundle: false,       
+  Bundle: false,   
+  BodyStructure: false,
   CarePlan: false,   
   CareTeam: true,
   Claim: false,       
@@ -170,6 +189,8 @@ let exportToggles = {
   ExplanationOfBenefit: false,
   FamilyMemberHistory: false,
   Goal: false,
+  Group: false,
+  HealthcareService: false,
   Immunization: false,
   ImagingStudy: false,
   List: false,
@@ -177,7 +198,9 @@ let exportToggles = {
   Measure: false,
   MeasureReport: false,
   Medication: false,
+  MedicationAdministration: false,
   MedicationOrder: false,
+  MedicationRequest: false,
   MedicationStatement: false,
   MessageHeader: false,
   Observation: false,
@@ -192,7 +215,11 @@ let exportToggles = {
   RelatedPerson: false,
   RiskAssessment: false,
   Schedule: false,
+  SearchParameter: false,
+  Schedule: false,
   ServiceRequest: false,
+  StructureDefinition: false,
+  Specimen: false,
   Sequence: false,
   Task: false,
   ValueSet: false,
@@ -251,6 +278,7 @@ export function CollectionManagement(props){
       client: {
         AllergyIntolerance: 0,
         Bundle: 0,
+        BodyStructure: 0,
         Appointment: 0,
         CarePlan: 0,       
         CareTeam: 0,   
@@ -272,12 +300,15 @@ export function CollectionManagement(props){
         ExplanationOfBenefit: 0,
         FamilyMemberHistory: 0,
         Goal: 0,
+        Group: 0,
         Immunization: 0,
         ImagingStudy: 0,
         List: 0,
         Location: 0,
         Medication: 0,
+        MedicationAdministration: 0,
         MedicationOrder: 0,
+        MedicationRequest: 0,
         MedicationStatement: 0,
         MessageHeader: 0,
         Observation: 0,
@@ -292,17 +323,22 @@ export function CollectionManagement(props){
         RelatedPerson: 0,
         RiskAssessment: 0,
         Schedule: 0,
+        SearchParameter: 0,
         ServiceRequest: 0,
+        StructureDefinition: 0,
         Sequence: 0,
+        Specimen: 0,
+        Task: 0,
         ValueSet: 0,
         zero: 0
       },
       localClient: {
         AllergyIntolerance: 0,
         Bundle: 0,
+        BodyStructure: 0,
         Appointment: 0,
-        CarePlan: 0,   
-        CareTeam: 0,       
+        CarePlan: 0,       
+        CareTeam: 0,   
         Claim: 0,
         Condition: 0,
         Communication: 0,
@@ -321,12 +357,15 @@ export function CollectionManagement(props){
         ExplanationOfBenefit: 0,
         FamilyMemberHistory: 0,
         Goal: 0,
+        Group: 0,
         Immunization: 0,
         ImagingStudy: 0,
         List: 0,
         Location: 0,
         Medication: 0,
+        MedicationAdministration: 0,
         MedicationOrder: 0,
+        MedicationRequest: 0,
         MedicationStatement: 0,
         MessageHeader: 0,
         Observation: 0,
@@ -341,27 +380,32 @@ export function CollectionManagement(props){
         RelatedPerson: 0,
         RiskAssessment: 0,
         Schedule: 0,
+        SearchParameter: 0,
         ServiceRequest: 0,
+        StructureDefinition: 0,
         Sequence: 0,
+        Specimen: 0,
+        Task: 0,
         ValueSet: 0,
         zero: 0
       },
       datalake: {
         AllergyIntolerance: 0,
-        Appointment: 0,
         Bundle: 0,
-        CarePlan: 0,         
-        CareTeam: 0, 
+        BodyStructure: 0,
+        Appointment: 0,
+        CarePlan: 0,       
+        CareTeam: 0,   
         Claim: 0,
-        ClinicalImpression: 0,
-        ClinicalDocument: 0,
         Condition: 0,
-        Consent: 0,
-        Contract: 0,
         Communication: 0,
         CommunicationRequest: 0,
         CommunicationResponse: 0,
         Composition: 0,
+        Consent: 0,
+        Contract: 0,
+        ClinicalImpression: 0,
+        ClinicalDocument: 0,
         Device: 0,
         DiagnosticReport: 0,
         DocumentReference: 0,
@@ -370,29 +414,36 @@ export function CollectionManagement(props){
         ExplanationOfBenefit: 0,
         FamilyMemberHistory: 0,
         Goal: 0,
+        Group: 0,
         Immunization: 0,
         ImagingStudy: 0,
         List: 0,
         Location: 0,
         Medication: 0,
+        MedicationAdministration: 0,
         MedicationOrder: 0,
+        MedicationRequest: 0,
         MedicationStatement: 0,
         MessageHeader: 0,
         Observation: 0,
         Organization: 0,
         Patient: 0,
+        Person: 0,
         Practitioner: 0,
         Procedure: 0,
         ProcedureRequest: 0,
-        Person: 0,
         Questionnaire: 0,
         QuestionnaireResponse: 0,
         RelatedPerson: 0,
         RiskAssessment: 0,
-        Location: 0,
         Schedule: 0,
+        SearchParameter: 0,
         ServiceRequest: 0,
+        StructureDefinition: 0,
         Sequence: 0,
+        Specimen: 0,
+        StructureDefinition: 0,
+        Task: 0,
         ValueSet: 0,
         zero: 0
       },
@@ -400,6 +451,7 @@ export function CollectionManagement(props){
         AllergyIntolerance: false,
         Appointment: false,
         Bundle: false,
+        BodyStructure: false,
         CarePlan: false,    
         CareTeam: false,      
         Claim: false,
@@ -419,12 +471,15 @@ export function CollectionManagement(props){
         ExplanationOfBenefit: false,
         FamilyMemberHistory: false,
         Goal: false,
+        Group: false,
         Immunization: false,
         ImagingStudy: false,
         List: false,
         Location: false,
         Medication: false,
+        MedicationAdministration: false,
         MedicationOrder: false,
+        MedicationRequest: false,
         MedicationStatement: false,
         MessageHeader: false,
         Observation: false,
@@ -440,8 +495,12 @@ export function CollectionManagement(props){
         RiskAssessment: false,
         Location: false,
         Schedule: false,
-        ServiceRequest: false,
+        SearchParameter: false,
         Sequence: false,
+        Specimen: false,
+        ServiceRequest: false,
+        StructureDefinition: false,
+        Task: false,
         ValueSet: false
       }
     }
@@ -457,6 +516,7 @@ export function CollectionManagement(props){
     return Session.get('datalakeStats');
   }, [])
 
+  let [ exportsAllChecked, setExportsAllChecked ] = useState(false);
 
 
   if(props.preview){
@@ -517,7 +577,6 @@ export function CollectionManagement(props){
   function setToggleExportState(collection, isInputChecked){
     let toggleExportStates = Session.get('toggleExportStates');
     toggleExportStates[collection] = isInputChecked;
-    console.log('toggleExportStates', toggleExportStates)
     Session.set('toggleExportStates', toggleExportStates);
   }
   function toggleAllImports(event, isInputChecked){
@@ -527,6 +586,7 @@ export function CollectionManagement(props){
     setToggleImportState('AllergyIntolerance', isInputChecked)
     setToggleImportState('Appointment', isInputChecked)
     setToggleImportState('Bundle', isInputChecked)
+    setToggleImportState('BodyStructure', isInputChecked)
     setToggleImportState('CarePlan', isInputChecked)
     setToggleImportState('CareTeam', isInputChecked)
     setToggleImportState('Claim', isInputChecked)
@@ -547,6 +607,8 @@ export function CollectionManagement(props){
     setToggleImportState('ExplanationOfBenefit', isInputChecked)
     setToggleImportState('FamilyMemberHistory', isInputChecked)
     setToggleImportState('Goal', isInputChecked)
+    setToggleImportState('Grouper', isInputChecked)
+    setToggleImportState('HealthcareService', isInputChecked)
     setToggleImportState('Immunization', isInputChecked)
     setToggleImportState('ImagingStudy', isInputChecked)
     setToggleImportState('List', isInputChecked)
@@ -554,7 +616,9 @@ export function CollectionManagement(props){
     setToggleImportState('Measure', isInputChecked)
     setToggleImportState('MeasureReport', isInputChecked)
     setToggleImportState('Medication', isInputChecked)
+    setToggleImportState('MedicationAdministration', isInputChecked)
     setToggleImportState('MedicationOrder', isInputChecked)
+    setToggleImportState('MedicationRequest', isInputChecked)
     setToggleImportState('MedicationStatement', isInputChecked)
     setToggleImportState('MessageHeader', isInputChecked)
     setToggleImportState('Observation', isInputChecked)
@@ -569,8 +633,11 @@ export function CollectionManagement(props){
     setToggleImportState('RelatedPerson', isInputChecked)
     setToggleImportState('RiskAssessment', isInputChecked)
     setToggleImportState('Schedule', isInputChecked)
+    setToggleImportState('SearchParameter', isInputChecked)
     setToggleImportState('ServiceRequest', isInputChecked)
     setToggleImportState('Sequence', isInputChecked)
+    setToggleImportState('Specimen', isInputChecked)
+    setToggleImportState('StructureDefinition', isInputChecked)
     setToggleImportState('Task', isInputChecked)
     setToggleImportState('ValueSet', isInputChecked);
 
@@ -588,6 +655,9 @@ export function CollectionManagement(props){
   };
   function toggleBundles(event, isInputChecked){    
     setToggleImportState('Bundle', isInputChecked)
+  };
+  function toggleBodyStructures(event, isInputChecked){    
+    setToggleImportState('BodyStructure', isInputChecked)
   };
   function toggleCarePlans(event, isInputChecked){    
     setToggleImportState('CarePlan', isInputChecked)
@@ -649,6 +719,12 @@ export function CollectionManagement(props){
   function toggleGoals(event, isInputChecked){
     setToggleImportState('Goal', isInputChecked)
   };
+  function toggleGroups(event, isInputChecked){
+    setToggleImportState('Group', isInputChecked)
+  };
+  function toggleHealthcareServices(event, isInputChecked){
+    setToggleImportState('HealthcareService', isInputChecked)
+  };
   function toggleImmunizations(event, isInputChecked){
     setToggleImportState('Immunization', isInputChecked)
   };
@@ -670,8 +746,14 @@ export function CollectionManagement(props){
   function toggleMedications(event, isInputChecked){    
     setToggleImportState('Medication', isInputChecked)
   };
+  function toggleMedicationAdministrations(event, isInputChecked){    
+    setToggleImportState('MedicationAdministration', isInputChecked)
+  };
   function toggleMedicationOrders(event, isInputChecked){    
     setToggleImportState('MedicationOrder', isInputChecked)
+  };
+  function toggleMedicationRequests(event, isInputChecked){    
+    setToggleImportState('MedicationRequest', isInputChecked)
   };
   function toggleMedicationStatements(event, isInputChecked){    
     setToggleImportState('MedicationStatement', isInputChecked)
@@ -712,6 +794,15 @@ export function CollectionManagement(props){
   function toggleRiskAssessments(event, isInputChecked){    
     setToggleImportState('RiskAssessment', isInputChecked)
   };
+  function toggleSpecimens(event, isInputChecked){    
+    setToggleImportState('Specimen', isInputChecked)
+  };
+  function toggleStructureDefinitions(event, isInputChecked){    
+    setToggleImportState('StructureDefinition', isInputChecked)
+  };
+  function toggleSearchParameters(event, isInputChecked){    
+    setToggleImportState('SearchParameter', isInputChecked)
+  };
   function toggleSchedules(event, isInputChecked){    
     setToggleImportState('Schedule', isInputChecked)
   };
@@ -743,6 +834,7 @@ export function CollectionManagement(props){
     setToggleExportState('AllergyIntolerance', isInputChecked)
     setToggleExportState('Appointment', isInputChecked)
     setToggleExportState('Bundle', isInputChecked)
+    setToggleExportState('BodyStructure', isInputChecked)
     setToggleExportState('CarePlan', isInputChecked)
     setToggleExportState('CareTeam', isInputChecked)
     setToggleExportState('Claim', isInputChecked)
@@ -763,6 +855,7 @@ export function CollectionManagement(props){
     setToggleExportState('ExplanationOfBenefit', isInputChecked)
     setToggleExportState('FamilyMemberHistory', isInputChecked)
     setToggleExportState('Goal', isInputChecked)
+    setToggleExportState('Group', isInputChecked)
     setToggleExportState('Immunization', isInputChecked)
     setToggleExportState('ImagingStudy', isInputChecked)
     setToggleExportState('List', isInputChecked)
@@ -770,7 +863,9 @@ export function CollectionManagement(props){
     setToggleExportState('Measure', isInputChecked)
     setToggleExportState('MeasureReport', isInputChecked)
     setToggleExportState('Medication', isInputChecked)
+    setToggleExportState('MedicationAdministration', isInputChecked)
     setToggleExportState('MedicationOrder', isInputChecked)
+    setToggleExportState('MedicationRequest', isInputChecked)
     setToggleExportState('MedicationStatement', isInputChecked)
     setToggleExportState('MessageHeader', isInputChecked)
     setToggleExportState('Observation', isInputChecked)
@@ -784,6 +879,9 @@ export function CollectionManagement(props){
     setToggleExportState('QuestionnaireResponse', isInputChecked)
     setToggleExportState('RelatedPerson', isInputChecked)
     setToggleExportState('RiskAssessment', isInputChecked)
+    setToggleExportState('StructureDefinition', isInputChecked)
+    setToggleExportState('Specimen', isInputChecked)
+    setToggleExportState('SearchParameter', isInputChecked)
     setToggleExportState('Schedule', isInputChecked)
     setToggleExportState('ServiceRequest', isInputChecked)
     setToggleExportState('Sequence', isInputChecked)
@@ -803,8 +901,10 @@ export function CollectionManagement(props){
     setToggleExportState('Appointment', isInputChecked)
   };
   function toggleBundlesExport(event, isInputChecked){    
-    // alert('toggleBundlesExport: ' + isInputChecked)
     setToggleExportState('Bundle', isInputChecked)
+  };
+  function toggleBodyStructuresExport(event, isInputChecked){    
+    setToggleExportState('BodyStructure', isInputChecked)
   };
   function toggleCarePlansExport(event, isInputChecked){    
     setToggleExportState('CarePlan', isInputChecked)
@@ -866,6 +966,12 @@ export function CollectionManagement(props){
   function toggleGoalsExport(event, isInputChecked){
     setToggleExportState('Goal', isInputChecked)
   };
+  function toggleGroupsExport(event, isInputChecked){
+    setToggleExportState('Group', isInputChecked)
+  };
+  function toggleHealthcareServicesExport(event, isInputChecked){
+    setToggleExportState('HealthcareService', isInputChecked)
+  };
   function toggleImmunizationsExport(event, isInputChecked){
     setToggleExportState('Immunization', isInputChecked)
   };
@@ -887,8 +993,14 @@ export function CollectionManagement(props){
   function toggleMedicationsExport(event, isInputChecked){    
     setToggleExportState('Medication', isInputChecked)
   };
+  function toggleMedicationAdministrationsExport(event, isInputChecked){
+    setToggleExportState('MedicationAdministration', isInputChecked)
+  }
   function toggleMedicationOrdersExport(event, isInputChecked){
     setToggleExportState('MedicationOrder', isInputChecked)
+  }
+  function toggleMedicationRequestsExport(event, isInputChecked){
+    setToggleExportState('MedicationRequest', isInputChecked)
   }
   function toggleMedicationStatementsExport(event, isInputChecked){
     setToggleExportState('MedicationStatement', isInputChecked)
@@ -929,6 +1041,9 @@ export function CollectionManagement(props){
   function toggleRiskAssessmentsExport(event, isInputChecked){    
     setToggleExportState('RiskAssessment', isInputChecked)
   };
+  function toggleStructureDefinitionsExport(event, isInputChecked){    
+    setToggleExportState('StructureDefinitions', isInputChecked)
+  };
   function toggleSchedulesExport(event, isInputChecked){    
     setToggleExportState('Schedule', isInputChecked)
   };
@@ -937,6 +1052,12 @@ export function CollectionManagement(props){
   };
   function toggleSequencesExport(event, isInputChecked){    
     setToggleExportState('Sequence', isInputChecked)
+  };
+  function toggleSearchParametersExport(event, isInputChecked){    
+    setToggleExportState('SearchParameter', isInputChecked)
+  };
+  function toggleSpecimensExport(event, isInputChecked){    
+    setToggleExportState('Specimen', isInputChecked)
   };
   function toggleTasksExport(event, isInputChecked){    
     setToggleExportState('Task', isInputChecked)
@@ -1037,30 +1158,30 @@ export function CollectionManagement(props){
   function renderIcon(resourceType){
     if(props.displayIcons){
         
-      import { Icon } from 'react-icons-kit'
-      import {fire} from 'react-icons-kit/icomoon/fire'
-      import {ic_warning} from 'react-icons-kit/md/ic_warning'
-      import {envelopeO} from 'react-icons-kit/fa/envelopeO' // Correspondence 
-      import {ic_devices} from 'react-icons-kit/md/ic_devices';
-      import {user} from 'react-icons-kit/fa/userMd'
-      import {users} from 'react-icons-kit/fa/users'
-      import {ic_question_answer} from 'react-icons-kit/md/ic_question_answer'      
-      import {ic_transfer_within_a_station} from 'react-icons-kit/md/ic_transfer_within_a_station' // Encounters 
-      import {ic_local_pharmacy} from 'react-icons-kit/md/ic_local_pharmacy'  // Medication, MedicationStatement, MedicationOrder  
-      import {heartbeat} from 'react-icons-kit/fa/heartbeat' // Condition
-      import {erlenmeyerFlask} from 'react-icons-kit/ionicons/erlenmeyerFlask' // Substance  
-      import {hospitalO} from 'react-icons-kit/fa/hospitalO' // Hospital  
-      import {bath} from 'react-icons-kit/fa/bath'  // Procedure  
-      import {suitcase} from 'react-icons-kit/fa/suitcase' // Bundle
-      import {notepad} from 'react-icons-kit/ikons/notepad'  // CarePlan ?
-      import {iosPulseStrong} from 'react-icons-kit/ionicons/iosPulseStrong' // Pulse, Condition  
-      import {location} from 'react-icons-kit/typicons/location' // Location
-      import {eyedropper} from 'react-icons-kit/fa/eyedropper'
-      import {dashboard} from 'react-icons-kit/fa/dashboard' //Dashboard
-      import {list} from 'react-icons-kit/fa/list' //Dashboard
-      import {addressCardO} from 'react-icons-kit/fa/addressCardO'  // Address Card  
-      import {mapO} from 'react-icons-kit/fa/mapO'
-      import {map} from 'react-icons-kit/fa/map'
+      // import { Icon } from 'react-icons-kit'
+      // import {fire} from 'react-icons-kit/icomoon/fire'
+      // import {ic_warning} from 'react-icons-kit/md/ic_warning'
+      // import {envelopeO} from 'react-icons-kit/fa/envelopeO' // Correspondence 
+      // import {ic_devices} from 'react-icons-kit/md/ic_devices';
+      // import {user} from 'react-icons-kit/fa/userMd'
+      // import {users} from 'react-icons-kit/fa/users'
+      // import {ic_question_answer} from 'react-icons-kit/md/ic_question_answer'      
+      // import {ic_transfer_within_a_station} from 'react-icons-kit/md/ic_transfer_within_a_station' // Encounters 
+      // import {ic_local_pharmacy} from 'react-icons-kit/md/ic_local_pharmacy'  // Medication, MedicationStatement, MedicationOrder  
+      // import {heartbeat} from 'react-icons-kit/fa/heartbeat' // Condition
+      // import {erlenmeyerFlask} from 'react-icons-kit/ionicons/erlenmeyerFlask' // Substance  
+      // import {hospitalO} from 'react-icons-kit/fa/hospitalO' // Hospital  
+      // import {bath} from 'react-icons-kit/fa/bath'  // Procedure  
+      // import {suitcase} from 'react-icons-kit/fa/suitcase' // Bundle
+      // import {notepad} from 'react-icons-kit/ikons/notepad'  // CarePlan ?
+      // import {iosPulseStrong} from 'react-icons-kit/ionicons/iosPulseStrong' // Pulse, Condition  
+      // import {location} from 'react-icons-kit/typicons/location' // Location
+      // import {eyedropper} from 'react-icons-kit/fa/eyedropper'
+      // import {dashboard} from 'react-icons-kit/fa/dashboard' //Dashboard
+      // import {list} from 'react-icons-kit/fa/list' //Dashboard
+      // import {addressCardO} from 'react-icons-kit/fa/addressCardO'  // Address Card  
+      // import {mapO} from 'react-icons-kit/fa/mapO'
+      // import {map} from 'react-icons-kit/fa/map'
 
       let iconToRender;
 
@@ -1290,7 +1411,6 @@ export function CollectionManagement(props){
   }
   function renderExportCheckmarkHeader(){
     if(props.displayExportCheckmarks){
-      let exportsAllChecked = get(this, 'data.collections.checkedExports.exportsAll', false)
       return(
         <TableCell className="exportAll"><Checkbox onChange={toggleAllExports.bind(this)} checked={exportsAllChecked} /></TableCell>
       )  
@@ -1417,6 +1537,24 @@ export function CollectionManagement(props){
       { renderDropButton('Bundle')} 
       { renderExportButton('Bundles')} 
       { renderExportCheckmark(toggleBundlesExport.bind(this), 'Bundle') }
+    </TableRow>
+  }
+
+  let bodyStructuresRow;
+  if(determineRowVisible("BodyStructure")){
+    shouldDisplayNoDataRow = false;
+    bodyStructuresRow = <TableRow className='dataManagementRow' hover={true}>
+      { renderIcon("BodyStructure") }
+      { renderImportCheckmark(toggleBodyStructures.bind(this), 'BodyStructure') }
+      { renderImportButton('BodyStructures')} 
+      <TableCell className="collection">BodyStructures</TableCell>
+      { renderPreview('BodyStructure')} 
+      { renderClientCount('BodyStructure')} 
+      { renderLocalClientCount('BodyStructure')} 
+      { renderPubSub('BodyStructure')} 
+      { renderDropButton('BodyStructure')} 
+      { renderExportButton('BodyStructures')} 
+      { renderExportCheckmark(toggleBodyStructuresExport.bind(this), 'BodyStructure') }
     </TableRow>
   }
 
@@ -1779,6 +1917,45 @@ export function CollectionManagement(props){
     </TableRow>
   }
 
+
+  let groupsRow;
+  if(determineRowVisible("Group")){
+    shouldDisplayNoDataRow = false;
+    groupsRow = <TableRow className='dataManagementRow' hover={true}>
+      { renderIcon("Group") }
+      { renderImportCheckmark(toggleGroups.bind(this), 'Group') }
+      { renderImportButton('Groups')} 
+      <TableCell className="collection">Groups</TableCell>
+      { renderPreview('Group')} 
+      { renderClientCount('Group')} 
+      { renderLocalClientCount('Group')} 
+      { renderPubSub('Group')} 
+      { renderDropButton('Group')} 
+      { renderExportButton('Groups')} 
+      { renderExportCheckmark(toggleGroupsExport.bind(this), 'Group') }
+    </TableRow>
+  }
+
+
+
+  let healthcareServicesRow;
+  if(determineRowVisible("HealthcareService")){
+    shouldDisplayNoDataRow = false;
+    healthcareServicesRow = <TableRow className='dataManagementRow' hover={true}>
+      { renderIcon("HealthcareService") }
+      { renderImportCheckmark(toggleHealthcareServices.bind(this), 'HealthcareService') }
+      { renderImportButton('HealthcareServices')} 
+      <TableCell className="collection">HealthcareServices</TableCell>
+      { renderPreview('HealthcareService')} 
+      { renderClientCount('HealthcareService')} 
+      { renderLocalClientCount('HealthcareService')} 
+      { renderPubSub('HealthcareService')} 
+      { renderDropButton('HealthcareService')} 
+      { renderExportButton('HealthcareServices')} 
+      { renderExportCheckmark(toggleHealthcareServicesExport.bind(this), 'HealthcareService') }
+    </TableRow>
+  }
+
   let immunizationsRow;
   if(determineRowVisible("Immunization")){
     shouldDisplayNoDataRow = false;
@@ -1905,6 +2082,24 @@ export function CollectionManagement(props){
     </TableRow>
   }
 
+  let medicationAdministrationsRow;
+  if(determineRowVisible("MedicationAdministration")){
+    shouldDisplayNoDataRow = false;
+    medicationAdministrationsRow = <TableRow className='dataManagementRow'  hover={true}>
+      { renderIcon("MedicationAdministration") }
+      { renderImportCheckmark(toggleMedicationAdministrations.bind(this), 'MedicationAdministration') }
+      { renderImportButton('MedicationAdministrations')} 
+      <TableCell className="collection">MedicationAdministrations</TableCell>
+      { renderPreview('MedicationAdministration')} 
+      { renderClientCount('MedicationAdministration')} 
+      { renderLocalClientCount('MedicationAdministration')} 
+      { renderPubSub('MedicationAdministration')}       
+      { renderDropButton('MedicationAdministration')} 
+      { renderExportButton('MedicationAdministrations')} 
+      { renderExportCheckmark(toggleMedicationAdministrationsExport.bind(this), 'MedicationAdministration') }
+    </TableRow>
+  }
+
   let medicationOrdersRow;
   if(determineRowVisible("MedicationOrder")){
     shouldDisplayNoDataRow = false;
@@ -1922,6 +2117,25 @@ export function CollectionManagement(props){
       { renderExportCheckmark(toggleMedicationOrdersExport.bind(this), 'MedicationOrder') }
     </TableRow>
   }
+
+  let medicationRequestsRow;
+  if(determineRowVisible("MedicationRequest")){
+    shouldDisplayNoDataRow = false;
+    medicationRequestsRow = <TableRow className='dataManagementRow'  hover={true}>
+      { renderIcon("MedicationRequest") }
+      { renderImportCheckmark(toggleMedicationRequests.bind(this), 'MedicationRequest') }
+      { renderImportButton('MedicationRequests')} 
+      <TableCell className="collection">MedicationRequests</TableCell>
+      { renderPreview('MedicationRequest')} 
+      { renderClientCount('MedicationRequest')} 
+      { renderLocalClientCount('MedicationRequest')} 
+      { renderPubSub('MedicationRequest')}       
+      { renderDropButton('MedicationRequest')} 
+      { renderExportButton('MedicationRequests')} 
+      { renderExportCheckmark(toggleMedicationRequestsExport.bind(this), 'MedicationRequest') }
+    </TableRow>
+  }
+
 
   let medicationStatementsRow;
   if(determineRowVisible("MedicationStatement")){
@@ -2175,6 +2389,60 @@ export function CollectionManagement(props){
     </TableRow>
   }
 
+  let structureDefinitionsRow;
+  if(determineRowVisible("StructureDefinition")){
+    shouldDisplayNoDataRow = false;
+    structureDefinitionsRow = <TableRow className='dataManagementRow'  hover={true}>
+      { renderIcon("StructureDefinition") }
+      { renderImportCheckmark(toggleStructureDefinitions.bind(this), 'StructureDefinition') }
+      { renderImportButton('StructureDefinitions')} 
+      <TableCell className="collection">StructureDefinitions</TableCell>
+      { renderPreview('StructureDefinition')} 
+      { renderClientCount('StructureDefinition')} 
+      { renderLocalClientCount('StructureDefinition')} 
+      { renderPubSub('StructureDefinition')} 
+      { renderDropButton('StructureDefinition')} 
+      { renderExportButton('StructureDefinitions')} 
+      { renderExportCheckmark(toggleStructureDefinitionsExport.bind(this), 'StructureDefinition') }
+    </TableRow>
+  }
+
+  let specimensRow;
+  if(determineRowVisible("Specimen")){
+    shouldDisplayNoDataRow = false;
+    specimensRow = <TableRow className='dataManagementRow'  hover={true}>
+      { renderIcon("Specimen") }
+      { renderImportCheckmark(toggleSpecimens.bind(this), 'Specimen') }
+      { renderImportButton('Specimens')} 
+      <TableCell className="collection">Specimens</TableCell>
+      { renderPreview('Specimen')} 
+      { renderClientCount('Specimen')} 
+      { renderLocalClientCount('Specimen')} 
+      { renderPubSub('Specimen')} 
+      { renderDropButton('Specimen')} 
+      { renderExportButton('Specimens')} 
+      { renderExportCheckmark(toggleSpecimensExport.bind(this), 'Specimen') }
+    </TableRow>
+  }
+
+  let searchParametersRow;
+  if(determineRowVisible("SearchParameter")){
+    shouldDisplayNoDataRow = false;
+    searchParametersRow = <TableRow className='dataManagementRow'  hover={true}>
+      { renderIcon("SearchParameter") }
+      { renderImportCheckmark(toggleSearchParameters.bind(this), 'SearchParameter') }
+      { renderImportButton('SearchParameters')} 
+      <TableCell className="collection">SearchParameters</TableCell>
+      { renderPreview('SearchParameter')} 
+      { renderClientCount('SearchParameter')} 
+      { renderLocalClientCount('SearchParameter')} 
+      { renderPubSub('SearchParameter')} 
+      { renderDropButton('SearchParameter')} 
+      { renderExportButton('SearchParameters')} 
+      { renderExportCheckmark(toggleSearchParametersExport.bind(this), 'SearchParameter') }
+    </TableRow>
+  }
+
   let serviceRequestsRow;
   if(determineRowVisible("ServiceRequest")){
     shouldDisplayNoDataRow = false;
@@ -2275,6 +2543,7 @@ export function CollectionManagement(props){
         { allergyIntolerancesRow }
         { appointmentsRow }
         { bundlesRow }
+        { bodyStructuresRow }
         { carePlansRow } 
         { careTeamsRow }
         { claimsRow }
@@ -2295,6 +2564,8 @@ export function CollectionManagement(props){
         { explanationOfBenefitsRow }
         { familyMemberHistoriesRow }
         { goalsRow }
+        { groupsRow }
+        { healthcareServicesRow }
         { immunizationsRow }
         { imagingStudiesRow }
         { listsRow } 
@@ -2303,6 +2574,8 @@ export function CollectionManagement(props){
         { measureReportsRow }
         { medicationsRow }
         { medicationOrdersRow }
+        { medicationAdministrationsRow }
+        { medicationRequestsRow }
         { medicationStatementsRow }
         { messageHeadersRow }
         { observationsRow }
@@ -2317,8 +2590,11 @@ export function CollectionManagement(props){
         { relatedPersonsRow }
         { riskAssessmentsRow }
         { schedulesRow }
+        { searchParametersRow }
         { serviceRequestsRow }
-        { sequencesRow }              
+        { sequencesRow }    
+        { specimensRow }                    
+        { structureDefinitionsRow }              
         { tasksRow }  
         { valueSetsRow }            
       </TableBody>

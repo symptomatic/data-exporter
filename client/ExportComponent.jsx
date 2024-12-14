@@ -409,23 +409,25 @@ export function ExportComponent(props){
     setTableOfContents(isChecked)
   }
   function prepareData(event, value){
+    console.log('============================================================================================================')
     console.log("Let's try to export a file.  Using algorithm #" + exportFileType)
     let self = this;
 
     let dataContent = Session.get('exportBuffer');
+    console.log('dataContent', dataContent);
 
     switch (exportFileType) {
       case 1:  // FHIR Bundle
         exportContinuityOfCareDoc();
         break;      
       case 2:  // FHIR Bulk Data
-        exportBulkData();
+        exportBulkData(dataContent);
         break;      
       case 4:  // Geojson
         exportGeojson();
         break;      
       case 5:  // PHR
-        exportBulkData();
+        exportBulkData(dataContent);
         break;      
       default:
         exportContinuityOfCareDoc();
@@ -469,16 +471,15 @@ export function ExportComponent(props){
     // filterString, excludeEnteredInError, includeCoverLetter, includeTableOfContents, patient
     MedicalRecordsExporter.exportContinuityOfCareDoc(patientFilter, errorFilter, coverLetter, tableOfContents, patientSummary, Patients.findOne());
   }
-  function exportBulkData(){
-    console.log('Exporting bulk data');
+  function exportBulkData(dataContent){
+    console.log('Exporting bulk data', dataContent);
 
-    MedicalRecordsExporter.exportBulkData(patientFilter, errorFilter, coverLetter, tableOfContents);
+    MedicalRecordsExporter.exportBulkData(patientFilter, errorFilter, coverLetter, tableOfContents, dataContent);
   }
 
   function handleEditorUpdate(newExportBuffer){
     console.log('handleEditorUpdate', newExportBuffer)
     setEditorContent(newExportBuffer)
-    // Session.set('exportBuffer', JSON.parse(newExportBuffer))
   }
   function downloadExportFile(){
     console.log('downloadExportFile')
@@ -505,6 +506,21 @@ export function ExportComponent(props){
 
       let blob;
       switch (exportFileType) {
+        case 1:  // JSON
+          // console.log('exportBuffer', exportBuffer)
+          console.log('editorContent', editorContent)
+          if(encryptExport){
+            // https://atmospherejs.com/jparker/crypto-aes
+            jsonFile = CryptoJS.AES.encrypt(JSON.stringify(editorContent), Meteor.userId());
+          } else {
+            if(typeof editorContent === "object"){
+              jsonFile = JSON.stringify(editorContent, null, 2);
+            } else {
+              jsonFile = editorContent;
+            }
+          }
+          blob = new Blob([jsonFile], { type: 'application/json;charset=utf-8;' })
+          break;
         case 2:  // NDJSON
           // console.log('exportBuffer', exportBuffer)
           console.log('editorContent', editorContent)
