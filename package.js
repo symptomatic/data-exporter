@@ -1,5 +1,5 @@
 Package.describe({
-  name: 'symptomatic:data-relay',
+  name: 'clinical:data-exporter',
   version: '0.12.2',
   summary: 'Data Relay',
   git: 'http://github.com/symptomatic/data-relay',
