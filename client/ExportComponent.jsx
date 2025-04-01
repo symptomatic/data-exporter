@@ -116,55 +116,7 @@ function DynamicSpacer(props){
   if(get(Meteor, 'settings.public.theme.palette')){
     theme = Object.assign(theme, get(Meteor, 'settings.public.theme.palette'));
   }
-
-  // const muiTheme = createTheme({
-  //   typography: {
-  //     useNextvariants: true
-  //   },
-  //   palette: {
-  //     primary: {
-  //       main: theme.primaryColor,
-  //       contrastText: theme.primaryText
-  //     },
-  //     secondary: {
-  //       main: theme.secondaryColor,
-  //       contrastText: theme.errorText
-  //     },
-  //     appBar: {
-  //       main: theme.appBarColor,
-  //       contrastText: theme.appBarTextColor
-  //     },
-  //     cards: {
-  //       main: theme.cardColor,
-  //       contrastText: theme.cardTextColor
-  //     },
-  //     paper: {
-  //       main: theme.paperColor,
-  //       contrastText: theme.paperTextColor
-  //     },
-  //     error: {
-  //       main: theme.errorColor,
-  //       contrastText: theme.secondaryText
-  //     },
-  //     background: {
-  //       default: theme.backgroundCanvas
-  //     },
-  //     contrastThreshold: 3,
-  //     tonalOffset: 0.2
-  //   }
-  // });
-
-
-  // const useStyles = makeStyles((theme) => ({
-  //   root: {
-  //     width: '100%',
-  //   },
-  //   heading: {
-  //     fontSize: theme.typography.pxToRem(15),
-  //     fontWeight: theme.typography.fontWeightRegular,
-  //   },
-  // }));
-
+  
 //===================================================================================================================
 // Cordova  
 
