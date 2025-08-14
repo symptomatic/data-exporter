@@ -20,7 +20,8 @@ import {
   InputLabel,
   Input,
   SelectField,
-  Checkbox
+  Checkbox,
+  useTheme as useMuiTheme
 } from '@mui/material';
 
 // import Accordion from '@material-ui/Accordion';
@@ -69,8 +70,10 @@ import "ace-builds/src-noconflict/theme-monokai";
 // Helper Components 
 
 let Patients;
+let useTheme;
 Meteor.startup(function(){
   Patients = Meteor.Collections.Patients;
+  useTheme = Meteor.useTheme;
 })
 
 
@@ -238,19 +241,14 @@ TabContainer.propTypes = {
 //====================================================================================
 // Shared Components
 
-let useTheme;
-Meteor.startup(function(){
-  useTheme = Meteor.useTheme;
-})
-
 
 //===================================================================================================================
 // Main Component  
 
 export function ExportComponent(props){
-
   // const classes = useStyles();
-  const { theme, toggleTheme } = useTheme();
+  const { theme: themeMode, toggleTheme } = useTheme();
+  const muiTheme = useMuiTheme();
 
   if(!logger && window.logger){
     logger = window.logger;
@@ -749,7 +747,7 @@ export function ExportComponent(props){
     relayElements = <div>
     <CardHeader 
       title="Step 3b - Send to Server" />
-    <Card disabled>
+    <Card disabled style={{backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff'}}>
       <CardContent>
         <FormControl style={{width: '100%'}}>
           <InputLabel id="export-algorithm-label">Destination</InputLabel>
@@ -788,7 +786,7 @@ export function ExportComponent(props){
     proxyRelayElements = <div>
       <CardHeader 
         title="Step 3c - Proxy Relay" />
-      <Card disabled>
+      <Card disabled style={{backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff'}}>
         <CardContent>
           <FormControl style={{width: '100%'}}>
             <InputLabel id="export-algorithm-label">Destination</InputLabel>
@@ -843,7 +841,7 @@ export function ExportComponent(props){
         <Grid item lg={4} style={{marginBottom: '84px'}}>
         <CardHeader 
             title="Step 0 - Select Algorithm" />
-          <Card >
+          <Card style={{backgroundColor: muiTheme.palette.mode === 'dark' ? muiTheme.palette.background.paper : '#ffffff'}}>
             <CardContent>
               <FormControl style={{width: '100%', paddingBottom: '20px'}}>
                 <InputLabel id="export-algorithm-label">Export Algorithm</InputLabel>
@@ -882,7 +880,7 @@ export function ExportComponent(props){
 
           <CardHeader 
             title="Step 1 - Select Data To Export" />
-          <Card >
+          <Card style={{backgroundColor: muiTheme.palette.mode === 'dark' ? muiTheme.palette.background.paper : '#ffffff'}}>
             <CardContent>
               <CollectionManagement
                 displayImportCheckmarks={false}
@@ -897,7 +895,7 @@ export function ExportComponent(props){
             </CardContent>
           </Card>
           <DynamicSpacer />
-          <Card >
+          <Card style={{backgroundColor: muiTheme.palette.mode === 'dark' ? muiTheme.palette.background.paper : '#ffffff'}}>
             <CardContent>
               <Checkbox 
                 defaultChecked={false} 
@@ -936,14 +934,14 @@ export function ExportComponent(props){
           <CardHeader 
             title="Step 2 - Review and Edit" />
 
-          <Card >
+          <Card style={{backgroundColor: muiTheme.palette.mode === 'dark' ? muiTheme.palette.background.paper : '#ffffff'}}>
             <CardContent>
             
             
               <AceEditor
                 // placeholder="Placeholder Text"
                 mode="json"
-                theme={theme === 'light' ? "tomorrow" : "monokai"}
+                theme={themeMode === 'light' ? "tomorrow" : "monokai"}
                 name="exportBuffer"
                 onChange={ handleEditorUpdate.bind(this) }
                 fontSize={14}
@@ -984,7 +982,7 @@ export function ExportComponent(props){
 
           <CardHeader 
             title="Step 3 - Select File Type and Download" />
-          <Card >
+          <Card style={{backgroundColor: muiTheme.palette.mode === 'dark' ? muiTheme.palette.background.paper : '#ffffff'}}>
             <CardContent>
 
               { fileNameInput }

@@ -1,3 +1,4 @@
+// /Volumes/SonicMagic/Code/honeycomb-public-release/packages/data-exporter/client/ExportPage.jsx
 // https://www.npmjs.com/package/react-dropzone-component
 // http://www.dropzonejs.com/
 
@@ -8,18 +9,29 @@ import { Session } from 'meteor/session';
 import { Meteor } from 'meteor/meteor';
 
 import { get } from 'lodash';
+import { useTheme } from '@mui/material/styles';
 
 import { ExportComponent } from './ExportComponent';
 
+let useAppTheme;
+Meteor.startup(function(){
+  useAppTheme = Meteor.useTheme;
+})
 
 
 //============================================================================
 // Main Component  
 
 export function ExportPage(props){
+  const theme = useTheme();
+  const appTheme = useAppTheme ? useAppTheme() : { theme: 'light' };
 
   return(
-    <div id="ExportPage" style={{padding: '20px'}}>
+    <div id="ExportPage" style={{
+      padding: '20px',
+      backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.default : '#f6f6f6',
+      minHeight: window.innerHeight
+    }}>
       <ExportComponent history={props.history} />
     </div>
   );
