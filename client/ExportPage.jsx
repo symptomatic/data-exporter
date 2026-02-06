@@ -29,7 +29,6 @@ export function ExportPage(props){
   return(
     <div id="ExportPage" style={{
       padding: '20px',
-      backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.default : '#f6f6f6',
       minHeight: window.innerHeight
     }}>
       <ExportComponent history={props.history} />

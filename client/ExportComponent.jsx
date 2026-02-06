@@ -41,8 +41,12 @@ import { HTTP } from 'meteor/http';
 import React, { useState, useEffect } from 'react';
 import { ReactMeteorData, useTracker } from 'meteor/react-meteor-data';
 
+// Handle optional Roles package
+let Roles;
 if(Package["meteor/alanning:roles"]){
-  import { Roles } from 'meteor/alanning:roles';
+  import('meteor/alanning:roles').then((module) => {
+    Roles = module.Roles;
+  });
 }
 
 // import ReactGA from 'react-ga';
@@ -249,6 +253,12 @@ export function ExportComponent(props){
   // const classes = useStyles();
   const { theme: themeMode, toggleTheme } = useTheme();
   const muiTheme = useMuiTheme();
+  const isDark = themeMode === 'dark';
+
+  // Theme-aware colors: use mode-specific defaults
+  const cardBgColor = isDark ? '#1e1e1e' : '#ffffff';
+  const cardTextColor = isDark ? 'rgba(255, 255, 255, 0.87)' : 'rgba(0, 0, 0, 0.87)';
+  const subheaderColor = isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)';
 
   if(!logger && window.logger){
     logger = window.logger;
@@ -275,6 +285,7 @@ export function ExportComponent(props){
   const [tableOfContents, setTableOfContents] = useState(false);
   const [coverLetter, setCoverLetter] = useState(false);
   const [patientSummary, setPatientSummary] = useState(false);
+  const [includeSelectedPatient, setIncludeSelectedPatient] = useState(false);
 
   const [editorContent, setEditorContent] = useState("");
 
@@ -358,6 +369,10 @@ export function ExportComponent(props){
     console.log('handleToggleTableOfContents', isChecked)
     setTableOfContents(isChecked)
   }
+  function handleToggleIncludeSelectedPatient(event, isChecked){
+    console.log('handleToggleIncludeSelectedPatient', isChecked)
+    setIncludeSelectedPatient(isChecked)
+  }
   function prepareData(event, value){
     console.log('============================================================================================================')
     console.log("Let's try to export a file.  Using algorithm #" + exportFileType)
@@ -369,23 +384,30 @@ export function ExportComponent(props){
     switch (exportFileType) {
       case 1:  // FHIR Bundle
         exportContinuityOfCareDoc();
-        break;      
+        break;
       case 2:  // FHIR Bulk Data
         exportBulkData(dataContent);
-        break;      
+        break;
       case 4:  // Geojson
         exportGeojson();
-        break;      
+        break;
       case 5:  // PHR
         exportBulkData(dataContent);
-        break;      
+        break;
       default:
         exportContinuityOfCareDoc();
         break;
     }
 
     if(!get(Meteor, 'settings.public.defaults.exportFile.fileName')){
-      setDownloadFileName((Meteor.FhirUtilities.pluckName(Patients.findOne())).replace(/\s/g, '') + "-" + get(Patients.findOne(), 'id'));
+      // Use selected patient if available, otherwise use first patient
+      let patientForFilename = patientFilter
+        ? Patients.findOne({id: patientFilter})
+        : Patients.findOne();
+
+      if(patientForFilename){
+        setDownloadFileName((Meteor.FhirUtilities.pluckName(patientForFilename)).replace(/\s/g, '') + "-" + get(patientForFilename, 'id'));
+      }
     }
   }
   function clearExportBuffer(){
@@ -418,13 +440,16 @@ export function ExportComponent(props){
   function exportContinuityOfCareDoc(){
     console.log('Export a Continuity Of Care Document');
 
-    // filterString, excludeEnteredInError, includeCoverLetter, includeTableOfContents, patient
-    MedicalRecordsExporter.exportContinuityOfCareDoc(patientFilter, errorFilter, coverLetter, tableOfContents, patientSummary, Patients.findOne());
+    // filterString, excludeEnteredInError, includeCoverLetter, includeTableOfContents, includePatientSummary, patient, includeSelectedPatient
+    let selectedPatient = includeSelectedPatient ? Session.get('selectedPatientId') : null;
+    let currentPatient = patientFilter ? Patients.findOne({id: patientFilter}) : null;
+    MedicalRecordsExporter.exportContinuityOfCareDoc(patientFilter, errorFilter, coverLetter, tableOfContents, patientSummary, currentPatient, selectedPatient);
   }
   function exportBulkData(dataContent){
     console.log('Exporting bulk data', dataContent);
 
-    MedicalRecordsExporter.exportBulkData(patientFilter, errorFilter, coverLetter, tableOfContents, dataContent);
+    let selectedPatient = includeSelectedPatient ? Session.get('selectedPatientId') : null;
+    MedicalRecordsExporter.exportBulkData(patientFilter, errorFilter, coverLetter, tableOfContents, dataContent, selectedPatient);
   }
 
   function handleEditorUpdate(newExportBuffer){
@@ -677,7 +702,7 @@ export function ExportComponent(props){
     // downloadLabel = 'Copy to Clipboard'
     downloadLabel = 'Select All > Share > Save to Files > iCloud';
     downloadDisabled = true;
-    downloadAnchor = <h4 style={{textAlign: 'center', width: '100%', margin: '10px', marginBottom: '20px'}}>Select All > Share > Save to Files > iCloud</h4>
+    downloadAnchor = <h4 style={{textAlign: 'center', width: '100%', margin: '10px', marginBottom: '20px'}}>Select All &gt; Share &gt; Save to Files &gt; iCloud</h4>
   } else {    
     fileNameInput = <Grid container spacing={3}>
       <Grid item xs={9} >
@@ -728,9 +753,9 @@ export function ExportComponent(props){
   let interfacesObject = get(Meteor, 'settings.public.interfaces');
   if(interfacesObject){
     Object.keys(interfacesObject).forEach(function(key, index){
-      let interface = interfacesObject[key];
-      if(has(interface, 'channel.endpoint') && (get(interface, 'status') === "active")){
-        relayOptions.push(<MenuItem value={get(interface, 'channel.endpoint')} id={"relay-menu-item-" + index} key={"relay-menu-item-" + index} >{get(interface, 'name')}</MenuItem>)
+      let interfaceConfig = interfacesObject[key];
+      if(has(interfaceConfig, 'channel.endpoint') && (get(interfaceConfig, 'status') === "active")){
+        relayOptions.push(<MenuItem value={get(interfaceConfig, 'channel.endpoint')} id={"relay-menu-item-" + index} key={"relay-menu-item-" + index} >{get(interfaceConfig, 'name')}</MenuItem>)
       }
     });  
   } else {
@@ -745,13 +770,20 @@ export function ExportComponent(props){
   let relayElements;
   if(get(Meteor, 'settings.public.modules.dataRelay') === true){
     relayElements = <div>
-    <CardHeader 
+    <CardHeader
       title="Step 3b - Send to Server" />
-    <Card disabled style={{backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff'}}>
+    <Card disabled sx={{
+      bgcolor: cardBgColor,
+      color: cardTextColor,
+      '& .MuiInputLabel-root': { color: cardTextColor },
+      '& .MuiSelect-root': { color: cardTextColor },
+      '& .MuiSelect-icon': { color: cardTextColor },
+      '& .MuiInput-root': { color: cardTextColor }
+    }}>
       <CardContent>
         <FormControl style={{width: '100%'}}>
           <InputLabel id="export-algorithm-label">Destination</InputLabel>
-          <Select                  
+          <Select
             value={ relayUrl}
             onChange={ handleChangeDestination.bind(this) }
             fullWidth
@@ -770,11 +802,11 @@ export function ExportComponent(props){
 
         <Button
           color="primary"
-          variant="contained" 
+          variant="contained"
           disabled={editorContent ? false : true}
           fullWidth
           onClick={handleRelay.bind(this)}
-        >Send to Bundle Service</Button> 
+        >Send to Bundle Service</Button>
 
       </CardContent>
     </Card>
@@ -784,13 +816,20 @@ export function ExportComponent(props){
   let proxyRelayElements;
   if(get(Meteor, 'settings.public.modules.proxyRelay') === true){
     proxyRelayElements = <div>
-      <CardHeader 
+      <CardHeader
         title="Step 3c - Proxy Relay" />
-      <Card disabled style={{backgroundColor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff'}}>
+      <Card disabled sx={{
+        bgcolor: cardBgColor,
+        color: cardTextColor,
+        '& .MuiInputLabel-root': { color: cardTextColor },
+        '& .MuiSelect-root': { color: cardTextColor },
+        '& .MuiSelect-icon': { color: cardTextColor },
+        '& .MuiInput-root': { color: cardTextColor }
+      }}>
         <CardContent>
           <FormControl style={{width: '100%'}}>
             <InputLabel id="export-algorithm-label">Destination</InputLabel>
-            <Select                  
+            <Select
               value={ relayUrl}
               onChange={ handleChangeDestination.bind(this) }
               fullWidth
@@ -810,10 +849,10 @@ export function ExportComponent(props){
           <Button
             disabled={editorContent ? false : true}
             color="primary"
-            variant="contained" 
+            variant="contained"
             fullWidth
             onClick={handleProxyRelay.bind(this)}
-          >Send to Proxy to Relay</Button> 
+          >Send to Proxy to Relay</Button>
 
         </CardContent>
       </Card>
@@ -839,9 +878,17 @@ export function ExportComponent(props){
     <div style={{"height": window.innerHeight, "overflow": "scroll", "paddingBottom": "128px" }}>          
       <Grid container spacing={3} >        
         <Grid item lg={4} style={{marginBottom: '84px'}}>
-        <CardHeader 
+        <CardHeader
             title="Step 0 - Select Algorithm" />
-          <Card style={{backgroundColor: muiTheme.palette.mode === 'dark' ? muiTheme.palette.background.paper : '#ffffff'}}>
+          <Card sx={{
+            bgcolor: cardBgColor,
+            color: cardTextColor,
+            '& .MuiInputLabel-root': { color: cardTextColor },
+            '& .MuiSelect-root': { color: cardTextColor },
+            '& .MuiSelect-icon': { color: cardTextColor },
+            '& .MuiCheckbox-root': { color: cardTextColor },
+            '& .MuiMenuItem-root': { color: cardTextColor }
+          }}>
             <CardContent>
               <FormControl style={{width: '100%', paddingBottom: '20px'}}>
                 <InputLabel id="export-algorithm-label">Export Algorithm</InputLabel>
@@ -851,36 +898,76 @@ export function ExportComponent(props){
                   value={ exportFileType }
                   onChange={ handleChangeExportFileType }
                   fullWidth
+                  sx={{
+                    color: cardTextColor,
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.23)' : 'rgba(0, 0, 0, 0.23)'
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'
+                    }
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        bgcolor: cardBgColor,
+                        color: cardTextColor,
+                        '& .MuiMenuItem-root': {
+                          color: cardTextColor,
+                          '&:hover': {
+                            bgcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)'
+                          }
+                        }
+                      }
+                    }
+                  }}
                   >
-                  <MenuItem value={1} style={{display: 'flow-root'}} ><div style={{float:'left'}}>FHIR Bundle</div><div style={{float:'right'}}>.json</div></MenuItem>
-                  <MenuItem value={2} style={{display: 'flow-root'}} ><div style={{float:'left'}}>FHIR Bulk Data</div><div style={{float:'right'}}>.ndjson</div></MenuItem>
-                  <MenuItem value={3} style={{display: 'flow-root'}} ><div style={{float:'left'}}>Comma Separated Values (CSV)</div><div style={{float:'right'}}>.csv</div></MenuItem>
-                  <MenuItem value={4} style={{display: 'flow-root'}} ><div style={{float:'left'}}>Geojson</div><div style={{float:'right'}}>.geojson</div></MenuItem>
-                  <MenuItem value={5} style={{display: 'flow-root'}} ><div style={{float:'left'}}>Personal Health Record</div><div style={{float:'right'}}>.phr</div></MenuItem>
+                  <MenuItem value={1} sx={{display: 'flow-root'}} ><div style={{float:'left'}}>FHIR Bundle</div><div style={{float:'right'}}>.json</div></MenuItem>
+                  <MenuItem value={2} sx={{display: 'flow-root'}} ><div style={{float:'left'}}>FHIR Bulk Data</div><div style={{float:'right'}}>.ndjson</div></MenuItem>
+                  <MenuItem value={3} sx={{display: 'flow-root'}} ><div style={{float:'left'}}>Comma Separated Values (CSV)</div><div style={{float:'right'}}>.csv</div></MenuItem>
+                  <MenuItem value={4} sx={{display: 'flow-root'}} ><div style={{float:'left'}}>Geojson</div><div style={{float:'right'}}>.geojson</div></MenuItem>
+                  <MenuItem value={5} sx={{display: 'flow-root'}} ><div style={{float:'left'}}>Personal Health Record</div><div style={{float:'right'}}>.phr</div></MenuItem>
                 </Select>
               </FormControl>
 
-              <Checkbox 
-                checked={coverLetter} 
-                onChange={ handleToggleCoverLetter.bind(this)} 
+              <Checkbox
+                checked={coverLetter}
+                onChange={ handleToggleCoverLetter.bind(this)}
               />Ensure cover letter exists (Composition) <br />
-              <Checkbox 
-                checked={coverLetter} 
-                onChange={ handleTogglePatientSummary.bind(this)} 
+              <Checkbox
+                checked={patientSummary}
+                onChange={ handleTogglePatientSummary.bind(this)}
               />Ensure International Patient Summary exists (Composition) <br />
-              <Checkbox 
-                checked={tableOfContents} 
-                onChange={ handleToggleTableOfContents.bind(this)} 
-              />Ensure table of contents exists (DocumentManifest)
+              <Checkbox
+                checked={tableOfContents}
+                onChange={ handleToggleTableOfContents.bind(this)}
+              />Ensure table of contents exists (DocumentManifest) <br />
+              <Checkbox
+                checked={includeSelectedPatient}
+                onChange={ handleToggleIncludeSelectedPatient.bind(this)}
+              />Add currently selected patient
 
             </CardContent>
           </Card>
           <DynamicSpacer />
 
 
-          <CardHeader 
+          <CardHeader
             title="Step 1 - Select Data To Export" />
-          <Card style={{backgroundColor: muiTheme.palette.mode === 'dark' ? muiTheme.palette.background.paper : '#ffffff'}}>
+          <Card sx={{
+            bgcolor: cardBgColor,
+            color: cardTextColor,
+            '& .MuiTableCell-root': {
+              color: cardTextColor,
+              borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)'
+            },
+            '& .MuiCheckbox-root': { color: cardTextColor },
+            '& .MuiTablePagination-root': { color: cardTextColor },
+            '& .MuiTablePagination-selectLabel': { color: cardTextColor },
+            '& .MuiTablePagination-displayedRows': { color: cardTextColor },
+            '& .MuiSelect-icon': { color: cardTextColor },
+            '& .MuiButton-root': { color: cardTextColor }
+          }}>
             <CardContent>
               <CollectionManagement
                 displayImportCheckmarks={false}
@@ -891,19 +978,25 @@ export function ExportComponent(props){
                 mode="export"
               />
 
-              
+
             </CardContent>
           </Card>
           <DynamicSpacer />
-          <Card style={{backgroundColor: muiTheme.palette.mode === 'dark' ? muiTheme.palette.background.paper : '#ffffff'}}>
+          <Card sx={{
+            bgcolor: cardBgColor,
+            color: cardTextColor,
+            '& .MuiCheckbox-root': { color: cardTextColor },
+            '& .MuiInputLabel-root': { color: cardTextColor },
+            '& .MuiInput-root': { color: cardTextColor }
+          }}>
             <CardContent>
-              <Checkbox 
-                defaultChecked={false} 
-                onChange={ handleToggleErrorFilter.bind(this)} 
+              <Checkbox
+                defaultChecked={false}
+                onChange={ handleToggleErrorFilter.bind(this)}
               />Filter Entered-in-Error records
-              <Checkbox 
-                defaultChecked={patientFilterToggle} 
-                onChange={ handleTogglePatientFilter.bind(this)} 
+              <Checkbox
+                defaultChecked={patientFilterToggle}
+                onChange={ handleTogglePatientFilter.bind(this)}
               />Filter By Patient
               <FormControl style={{width: '100%', marginTop: '20px', marginBottom: '20px'}}>
                 <InputLabel id="patient-filter-label">Patient Filter</InputLabel>
@@ -931,10 +1024,14 @@ export function ExportComponent(props){
           >Prepare data</Button>   
         </Grid>  
         <Grid item lg={4} style={{width: '100%', height: editCardHeight + 'px', marginBottom: '84px'}}>
-          <CardHeader 
+          <CardHeader
             title="Step 2 - Review and Edit" />
 
-          <Card style={{backgroundColor: muiTheme.palette.mode === 'dark' ? muiTheme.palette.background.paper : '#ffffff'}}>
+          <Card sx={{
+            bgcolor: cardBgColor,
+            color: cardTextColor,
+            '& .MuiButton-root': { color: cardTextColor }
+          }}>
             <CardContent>
             
             
@@ -980,9 +1077,14 @@ export function ExportComponent(props){
           { nextPageElements}          
           <DynamicSpacer />
 
-          <CardHeader 
+          <CardHeader
             title="Step 3 - Select File Type and Download" />
-          <Card style={{backgroundColor: muiTheme.palette.mode === 'dark' ? muiTheme.palette.background.paper : '#ffffff'}}>
+          <Card sx={{
+            bgcolor: cardBgColor,
+            color: cardTextColor,
+            '& .MuiInputLabel-root': { color: cardTextColor },
+            '& .MuiInput-root': { color: cardTextColor }
+          }}>
             <CardContent>
 
               { fileNameInput }

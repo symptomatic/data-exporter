@@ -6,8 +6,7 @@ import ExportPage from './client/ExportPage';
 let DynamicRoutes = [{
   'name': 'Export',
   'path': '/export-data',
-  'element': <ExportPage />,
-  'requireAuth': true
+  'element': <ExportPage />
 }];
 
 let AdminSidebarElements = [{
@@ -16,7 +15,13 @@ let AdminSidebarElements = [{
   iconName: "fire" ,
   excludeDevice: ['iPhone', 'iPad'],
   requireAuth: true
-}, ];
+}, {
+  primaryText: "Data Export",
+  to: "/data-export",
+  iconName: "fire" ,
+  excludeDevice: ['iPhone', 'iPad'],
+  requireAuth: true
+}];
 
 
 let AdminDynamicRoutes = DynamicRoutes;

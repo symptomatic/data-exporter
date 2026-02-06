@@ -49,31 +49,36 @@ if(Meteor.isServer){
   // Collections.Tasks = Tasks;
 
   Meteor.startup(function(){
-    Collections.AllergyIntolerances = global.Collections.AllergyIntolerances || {};
-    Collections.Bundles = global.Collections.Bundles || {};
-    Collections.CarePlans = global.Collections.CarePlans || {};
-    Collections.Conditions = global.Collections.Conditions || {};
-    Collections.Communications = global.Collections.Communications || {};
-    Collections.CommunicationRequests = global.Collections.CommunicationRequests || {};
-    Collections.CommunicationResponses = global.Collections.CommunicationResponses || {};
-    Collections.Devices = global.Collections.Devices || {} 
-    Collections.Encounters = global.Collections.Encounters || {};
-    Collections.Immunizations = global.Collections.Immunizations || {};
-    Collections.Lists = global.Collections.Lists || {};
-    Collections.Locations = global.Collections.Locations || {};
-    Collections.Medications = global.Collections.Medications || {};
-    Collections.MedicationOrders = global.Collections.MedicationOrders || {};
-    Collections.MedicationStatements = global.Collections.MedicationStatements || {};
-    Collections.MessageHeaders = global.Collections.MessageHeaders || {};
-    Collections.Measures = global.Collections.Measures || {};
-    Collections.MeasureReports = global.Collections.MeasureReports || {};
-    Collections.Organizations = global.Collections.Organizations || {};
-    Collections.Observations = global.Collections.Observations || {};
-    Collections.Patients = global.Collections.Patients || {};
-    Collections.Procedures = global.Collections.Procedures || {};
-    Collections.Questionnaires = global.Collections.Questionnaires || {};
-    Collections.QuestionnaireResponses = global.Collections.QuestionnaireResponses || {};
-    Collections.Tasks = global.Collections.Tasks || {};
+    // Ensure global.Collections exists before accessing
+    if (global.Collections) {
+      Collections.AllergyIntolerances = global.Collections.AllergyIntolerances || {};
+      Collections.Bundles = global.Collections.Bundles || {};
+      Collections.CarePlans = global.Collections.CarePlans || {};
+      Collections.Conditions = global.Collections.Conditions || {};
+      Collections.Communications = global.Collections.Communications || {};
+      Collections.CommunicationRequests = global.Collections.CommunicationRequests || {};
+      Collections.CommunicationResponses = global.Collections.CommunicationResponses || {};
+      Collections.Devices = global.Collections.Devices || {};
+      Collections.Encounters = global.Collections.Encounters || {};
+      Collections.Immunizations = global.Collections.Immunizations || {};
+      Collections.Lists = global.Collections.Lists || {};
+      Collections.Locations = global.Collections.Locations || {};
+      Collections.Medications = global.Collections.Medications || {};
+      Collections.MedicationOrders = global.Collections.MedicationOrders || {};
+      Collections.MedicationStatements = global.Collections.MedicationStatements || {};
+      Collections.MessageHeaders = global.Collections.MessageHeaders || {};
+      Collections.Measures = global.Collections.Measures || {};
+      Collections.MeasureReports = global.Collections.MeasureReports || {};
+      Collections.Organizations = global.Collections.Organizations || {};
+      Collections.Observations = global.Collections.Observations || {};
+      Collections.Patients = global.Collections.Patients || {};
+      Collections.Procedures = global.Collections.Procedures || {};
+      Collections.Questionnaires = global.Collections.Questionnaires || {};
+      Collections.QuestionnaireResponses = global.Collections.QuestionnaireResponses || {};
+      Collections.Tasks = global.Collections.Tasks || {};
+    } else {
+      console.warn('clinical:data-exporter - global.Collections not available at startup');
+    }
   })
 
 }
