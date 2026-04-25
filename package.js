@@ -14,10 +14,11 @@ Package.onUse(function(api) {
   api.use('ecmascript');
   api.use('session');
   api.use('mongo');    
-  api.use('react-meteor-data@3.0.1');
+  api.use('react-meteor-data@4.0.1');
   api.use('http@1.0.1');    
 
   api.use('clinical:hl7-resource-datatypes@4.0.7');
+  api.use('clinical:admin-tools@0.1.0');
 
   api.addFiles('server/methods.proxy.js', ['server']);
 

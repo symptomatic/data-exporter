@@ -1265,11 +1265,11 @@ export function CollectionManagement(props){
 
       let cellStyle = {
         cursor: 'pointer',
-        color: 'black'
+        color: 'inherit'
       }
       if(get(data, 'collections.pubsub') && get(data, "collections.pubsub." + resourceShorthand)){
         if(data.collections.pubsub[resourceType] === true){
-          cellStyle.color = 'lightgray';
+          cellStyle.opacity = 0.4;
         }
       }
 
