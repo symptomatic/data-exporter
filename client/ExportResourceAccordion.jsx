@@ -33,7 +33,10 @@ import {
 
 import { getResourceEmoji, getResourceSummary, getResourceAlertSeverity } from '../lib/resourceSummary.js';
 
-function ExportResourceAccordion() {
+function ExportResourceAccordion(props) {
+  var isDark = props.isDark || false;
+  var textSecondary = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
+
   // -------------------------------------------------------------------------
   // Reactive data: load all resources from Minimongo
   // -------------------------------------------------------------------------
@@ -176,7 +179,7 @@ function ExportResourceAccordion() {
   if (groupOrder.length === 0) {
     return (
       <Box sx={{ p: 2, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{ color: textSecondary }}>
           No resources available. Import data first.
         </Typography>
       </Box>
@@ -187,7 +190,7 @@ function ExportResourceAccordion() {
     <Box>
       {/* Select / Deselect All toolbar */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="caption" sx={{ color: textSecondary }}>
           {totalChecked} of {allResources.length} resources selected
         </Typography>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -195,7 +198,7 @@ function ExportResourceAccordion() {
             size="small"
             startIcon={<SelectAllIcon />}
             onClick={handleSelectAll}
-            sx={{ textTransform: 'none' }}
+            sx={{ textTransform: 'none', color: isDark ? 'rgba(255,255,255,0.7)' : undefined }}
           >
             All
           </Button>
@@ -203,7 +206,7 @@ function ExportResourceAccordion() {
             size="small"
             startIcon={<DeselectIcon />}
             onClick={handleDeselectAll}
-            sx={{ textTransform: 'none' }}
+            sx={{ textTransform: 'none', color: isDark ? 'rgba(255,255,255,0.7)' : undefined }}
           >
             None
           </Button>
@@ -235,7 +238,7 @@ function ExportResourceAccordion() {
               boxShadow: 'none'
             }}
           >
-            <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ minHeight: 36, px: 1 }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: isDark ? 'rgba(255,255,255,0.7)' : undefined }} />} sx={{ minHeight: 36, px: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
                 <Checkbox
                   checked={allChecked}
@@ -243,16 +246,23 @@ function ExportResourceAccordion() {
                   size="small"
                   onClick={function(e) { e.stopPropagation(); }}
                   onChange={function() { handleToggleType(type); }}
-                  sx={{ p: 0.25 }}
+                  sx={{ p: 0.25, color: isDark ? 'rgba(255,255,255,0.7)' : undefined }}
                 />
-                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                <Typography variant="body2" sx={{ fontWeight: 500, color: isDark ? 'rgba(255,255,255,0.87)' : undefined }}>
                   {emoji} {type}
                 </Typography>
                 <Chip
                   label={checkedCount + '/' + items.length}
                   size="small"
                   color={allChecked ? 'primary' : 'default'}
-                  sx={{ height: 18, fontSize: '0.7rem' }}
+                  sx={{
+                    height: 18,
+                    fontSize: '0.7rem',
+                    ...(isDark && !allChecked ? {
+                      bgcolor: 'rgba(255,255,255,0.12)',
+                      color: 'rgba(255,255,255,0.87)'
+                    } : {})
+                  }}
                 />
               </Box>
             </AccordionSummary>
@@ -270,7 +280,7 @@ function ExportResourceAccordion() {
                         checked={isChecked}
                         size="small"
                         onChange={function() { handleToggleResource(resource._id); }}
-                        sx={{ p: 0 }}
+                        sx={{ p: 0, color: isDark ? 'rgba(255,255,255,0.7)' : undefined }}
                       />
                     }
                     sx={{
@@ -279,7 +289,16 @@ function ExportResourceAccordion() {
                       fontSize: '0.75rem',
                       cursor: 'pointer',
                       opacity: isChecked ? 1 : 0.6,
-                      '& .MuiAlert-message': { width: '100%', overflow: 'hidden' }
+                      '& .MuiAlert-message': { width: '100%', overflow: 'hidden' },
+                      ...(isDark ? {
+                        bgcolor: 'rgba(255,255,255,0.05)',
+                        color: 'rgba(255,255,255,0.87)',
+                        '& .MuiAlert-icon': { color: 'rgba(255,255,255,0.7)' },
+                        '& .MuiChip-root': {
+                          bgcolor: 'rgba(255,255,255,0.12)',
+                          color: 'rgba(255,255,255,0.87)'
+                        }
+                      } : {})
                     }}
                     onClick={function() { handleToggleResource(resource._id); }}
                   >
@@ -295,7 +314,8 @@ function ExportResourceAccordion() {
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                          flex: 1
+                          flex: 1,
+                          color: isDark ? 'rgba(255,255,255,0.87)' : undefined
                         }}
                       >
                         {summary}

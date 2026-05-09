@@ -23,6 +23,7 @@ import {
 import { FileSystemContent } from './FileSystemContent.jsx';
 import { ClinicalScenarioContent } from './ClinicalScenarioContent.jsx';
 
+
 // =============================================================================
 // CONSTANTS
 // =============================================================================
@@ -54,6 +55,17 @@ function TabPanel(props) {
 // =============================================================================
 
 function ExportPageNew() {
+  var isDark = false;
+  if (typeof Meteor !== 'undefined' && Meteor.useTheme) {
+    var appTheme = Meteor.useTheme();
+    isDark = appTheme.theme === 'dark';
+  }
+
+  var pageBgColor = isDark ? '#121212' : '#f6f6f6';
+  var pageTextColor = isDark ? 'rgba(255,255,255,0.87)' : 'rgba(0,0,0,0.87)';
+  var dividerColor = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+  var textSecondary = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
+
   var selectedPatient = useTracker(function() {
     return Session.get('selectedPatient');
   }, []);
@@ -74,21 +86,6 @@ function ExportPageNew() {
   var selectedTab = tabState[0];
   var setSelectedTab = tabState[1];
 
-  // Detect dark mode from app theme
-  var isDark = false;
-  var useAppTheme;
-  if (typeof Meteor !== 'undefined' && Meteor.useTheme) {
-    useAppTheme = Meteor.useTheme;
-  }
-  if (useAppTheme) {
-    var appTheme = useAppTheme();
-    isDark = appTheme.theme === 'dark';
-  }
-
-  var pageBgColor = isDark ? '#121212' : '#f6f6f6';
-  var cardTextColor = isDark ? 'rgba(255,255,255,0.87)' : 'rgba(0,0,0,0.87)';
-  var dividerColor = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
-
   function handleTabChange(event, newValue) {
     setSelectedTab(newValue);
     navigate('?tab=' + TAB_SLUGS[newValue], { replace: true });
@@ -100,7 +97,7 @@ function ExportPageNew() {
       display: 'flex',
       flexDirection: 'column',
       bgcolor: pageBgColor,
-      color: cardTextColor,
+      color: pageTextColor,
       overflow: 'hidden'
     }}>
       {/* Header */}
@@ -128,7 +125,7 @@ function ExportPageNew() {
         borderColor: dividerColor,
         flexShrink: 0,
         px: 2,
-        '& .MuiTab-root': { color: cardTextColor },
+        '& .MuiTab-root': { color: pageTextColor },
         '& .MuiTab-root.Mui-selected': { color: 'primary.main' }
       }}>
         <Tabs
@@ -149,7 +146,7 @@ function ExportPageNew() {
             <Meteor.NoPatientSelectedCard />
           ) : (
             <Box sx={{ p: 4, textAlign: 'center' }}>
-              <Typography variant="body1" color="text.secondary">
+              <Typography variant="body1" sx={{ color: textSecondary }}>
                 No patient selected. Please select a patient from the sidebar.
               </Typography>
             </Box>
