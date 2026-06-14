@@ -1,0 +1,10 @@
+{
+  "name": "data-exporter",
+  "displayName": "Data Exporter",
+  "routes": [
+    { "name": "Export", "path": "/export-data", "component": "ExportPageNew", "requireAuth": false }
+  ],
+  "sidebarItems": [
+    { "primaryText": "Data Export", "to": "/export-data", "iconName": "Whatshot", "requireAuth": true }
+  ]
+}
