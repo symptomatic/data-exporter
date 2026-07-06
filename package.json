@@ -1,0 +1,25 @@
+{
+  "name": "@orbital/data-exporter",
+  "version": "0.12.2",
+  "description": "Data / medical-records exporter (collection export, FHIR bundle export, de-identification) - migrated from packages/data-exporter",
+  "main": "client.js",
+  "private": true,
+  "exports": {
+    ".": "./client.js",
+    "./server": "./server.js",
+    "./workflow": "./workflow.json",
+    "./lib/MedicalRecordsExporter": "./lib/MedicalRecordsExporter.js"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "@mui/material": "^5.0.0",
+    "@mui/icons-material": "^5.0.0",
+    "@node-on-fhir/admin-tools": "*",
+    "papaparse": "^5.4.1",
+    "xml2js": "^0.6.2",
+    "xlsx": "^0.18.5"
+  },
+  "keywords": ["fhir", "healthcare", "honeycomb", "data-exporter", "export", "de-identification"],
+  "author": "Orbital Health Systems, Inc",
+  "license": "UNLICENSED"
+}
