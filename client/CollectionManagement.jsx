@@ -230,6 +230,7 @@ Session.setDefault('toggleExportStates', exportToggles);
 
 
 Session.setDefault('datalakeStats', false);
+// rpc-migration: ddp-straggler
 Meteor.call('getServerStats', function(error, result){
   if(result){
     Session.set('datalakeStats', result);
@@ -1459,6 +1460,7 @@ export function CollectionManagement(props){
 
     if (confirm('Are you sure?')) {
       if(collection === "Lists"){
+        // rpc-migration: ddp-straggler
         Meteor.call('initializeChecklilsts', function(error, result){
           if(result){
             console.log('result', result)
@@ -1473,7 +1475,9 @@ export function CollectionManagement(props){
     console.log("callMethod", signature);
 
       if (confirm('Are you sure?')) {
+        // rpc-migration: ddp-straggler (dynamic method name)
         Meteor.call(signature, function(error, result){
+          // rpc-migration: ddp-straggler
           Meteor.call('getServerStats', function(error, result){
             if(result){
               Session.set('datalakeStats', result);
