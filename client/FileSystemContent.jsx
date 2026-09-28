@@ -2,9 +2,9 @@
 //
 // "File System" tab content for the Export page.
 // Three-column layout:
-//   1. Export Controls (file format, resource accordion, prepare data)
+//   1. Export Controls (patient card, resource accordion, file format + collapsible options, prepare data)
 //   2. AceEditor raw data preview (exportBuffer)
-//   3. Export Options + Download
+//   3. Status Alert + Download
 // Adapted from merkalis FileSystemContent — no ViewerStoreContext, no merkle storage.
 
 import React, { useState } from 'react';
@@ -22,9 +22,11 @@ import {
   CardActions,
   Button,
   Checkbox,
+  Collapse,
   FormControl,
   FormControlLabel,
   Grid,
+  IconButton,
   InputLabel,
   Input,
   Select,
@@ -33,6 +35,9 @@ import {
   Typography,
   Alert
 } from '@mui/material';
+
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import WrapTextIcon from '@mui/icons-material/WrapText';
 
 import ExportResourceAccordion from './ExportResourceAccordion.jsx';
 import MedicalRecordsExporter from '../lib/MedicalRecordsExporter';
@@ -62,15 +67,30 @@ export function FileSystemContent() {
     isDark = appTheme.theme === 'dark';
   }
 
+  var cardBgColor = isDark ? '#1e1e1e' : '#ffffff';
+  var cardTextColor = isDark ? 'rgba(255,255,255,0.87)' : 'rgba(0,0,0,0.87)';
+  var textDisabled = isDark ? 'rgba(255,255,255,0.38)' : 'rgba(0,0,0,0.38)';
+  var dividerColor = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+  var textSecondary = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)';
   var cardSx = {
-    bgcolor: isDark ? '#1e1e1e' : '#ffffff',
-    color: isDark ? 'rgba(255,255,255,0.87)' : 'rgba(0,0,0,0.87)',
-    '& .MuiCardHeader-title': { color: isDark ? 'rgba(255,255,255,0.87)' : 'rgba(0,0,0,0.87)' },
-    '& .MuiInputLabel-root': { color: isDark ? 'rgba(255,255,255,0.87)' : 'rgba(0,0,0,0.87)' },
-    '& .MuiSelect-root': { color: isDark ? 'rgba(255,255,255,0.87)' : 'rgba(0,0,0,0.87)' },
-    '& .MuiSelect-icon': { color: isDark ? 'rgba(255,255,255,0.87)' : 'rgba(0,0,0,0.87)' },
-    '& .MuiCheckbox-root': { color: isDark ? 'rgba(255,255,255,0.87)' : 'rgba(0,0,0,0.87)' },
-    '& .MuiFormControlLabel-label': { color: isDark ? 'rgba(255,255,255,0.87)' : 'rgba(0,0,0,0.87)' }
+    bgcolor: cardBgColor,
+    color: cardTextColor,
+    '& .MuiCardHeader-title': { color: cardTextColor },
+    '& .MuiCardHeader-subheader': { color: textSecondary },
+    '& .MuiInputLabel-root': { color: textSecondary },
+    '& .MuiInputBase-root': { color: cardTextColor },
+    '& .MuiInput-underline:before': { borderBottomColor: dividerColor },
+    '& .MuiOutlinedInput-notchedOutline': { borderColor: dividerColor },
+    '& .MuiSelect-icon': { color: cardTextColor },
+    '& .MuiCheckbox-root': { color: isDark ? 'rgba(255,255,255,0.7)' : undefined },
+    '& .MuiFormControlLabel-label': { color: cardTextColor },
+    '& .MuiIconButton-root': { color: cardTextColor },
+    '& .MuiChip-root': { color: cardTextColor },
+    '& .MuiAccordionSummary-expandIconWrapper': { color: cardTextColor },
+    '& .MuiButton-root.Mui-disabled': {
+      color: isDark ? 'rgba(255,255,255,0.3)' : undefined,
+      bgcolor: isDark ? 'rgba(255,255,255,0.12)' : undefined
+    }
   };
 
   // ---------------------------------------------------------------------------
@@ -117,6 +137,9 @@ export function FileSystemContent() {
     case 2:
       downloadFileExtension = '.ndjson';
       break;
+    case 5:
+      downloadFileExtension = '.phr';
+      break;
     default:
       downloadFileExtension = '.json';
       break;
@@ -130,6 +153,9 @@ export function FileSystemContent() {
   var [errorFilter, setErrorFilter] = useState(false);
   var [patientFilterToggle, setPatientFilterToggle] = useState(false);
   var [patientFilter, setPatientFilter] = useState('');
+  var [normalizeIds, setNormalizeIds] = useState(false);
+  var [optionsExpanded, setOptionsExpanded] = useState(false);
+  var [wordWrap, setWordWrap] = useState(true);
 
   function handleToggleCoverLetter(event) {
     var checked = event.target.checked;
@@ -159,6 +185,12 @@ export function FileSystemContent() {
     var value = event.target.value;
     setPatientFilter(value);
     Session.set('exportPatientFilter', value);
+  }
+
+  function handleToggleNormalizeIds(event) {
+    var checked = event.target.checked;
+    setNormalizeIds(checked);
+    Session.set('exportNormalizeIds', checked);
   }
 
   // ---------------------------------------------------------------------------
@@ -201,6 +233,8 @@ export function FileSystemContent() {
         );
         break;
       case 2:
+      case 5:
+        // .phr (Personal Health Record) is an alias of .ndjson — same bulk data pipeline
         MedicalRecordsExporter.exportBulkData(
           filterValue,
           exportErrorFilter,
@@ -221,6 +255,41 @@ export function FileSystemContent() {
           includeSelectedPatientId
         );
         break;
+    }
+
+    // Normalize _id values to strings if requested
+    var exportNormalizeIds = Session.get('exportNormalizeIds') || false;
+    if (exportNormalizeIds) {
+      var currentBuffer = Session.get('exportBuffer');
+      if (currentBuffer) {
+        if (typeof currentBuffer === 'object' && currentBuffer.entry && Array.isArray(currentBuffer.entry)) {
+          // Bundle format: walk entry[].resource._id
+          var normalizedBundle = JSON.parse(JSON.stringify(currentBuffer));
+          normalizedBundle.entry.forEach(function(entry) {
+            var resource = entry.resource || entry;
+            if (resource._id && typeof resource._id === 'object' && resource._id._str) {
+              resource._id = resource._id._str;
+            }
+          });
+          Session.set('exportBuffer', normalizedBundle);
+        } else if (typeof currentBuffer === 'string' && currentBuffer.length > 0) {
+          // Bulk data (NDJSON): parse each line, normalize, re-stringify
+          var lines = currentBuffer.split('\n');
+          var normalizedLines = lines.map(function(line) {
+            if (!line.trim()) return line;
+            try {
+              var resource = JSON.parse(line);
+              if (resource._id && typeof resource._id === 'object' && resource._id._str) {
+                resource._id = resource._id._str;
+              }
+              return JSON.stringify(resource);
+            } catch (e) {
+              return line;
+            }
+          });
+          Session.set('exportBuffer', normalizedLines.join('\n'));
+        }
+      }
     }
 
     // Auto-generate a filename from the patient
@@ -330,6 +399,14 @@ export function FileSystemContent() {
         blob = new Blob([ndjsonContent], { type: 'application/x-ndjson;charset=utf-8;' });
         break;
       }
+      case 5: {
+        var phrContent = exportBuffer;
+        if (typeof exportBuffer === 'object') {
+          phrContent = JSON.stringify(exportBuffer);
+        }
+        blob = new Blob([phrContent], { type: 'application/phr;charset=utf-8;' });
+        break;
+      }
       default: {
         var defaultContent;
         if (typeof exportBuffer === 'object') {
@@ -383,6 +460,17 @@ export function FileSystemContent() {
         flexDirection: 'column',
         gap: 2
       }}>
+        {/* Patient Card */}
+        {patientCardElement}
+
+        {/* Select Data Card */}
+        <Card sx={cardSx}>
+          <CardHeader title="Select Data to Export" />
+          <CardContent sx={{ maxHeight: 500, overflow: 'auto' }}>
+            <ExportResourceAccordion isDark={isDark} />
+          </CardContent>
+        </Card>
+
         {/* File Format Card */}
         <Card sx={cardSx}>
           <CardHeader title="File Format" />
@@ -395,6 +483,15 @@ export function FileSystemContent() {
                 value={exportFileType}
                 onChange={handleChangeExportFileType}
                 fullWidth
+                MenuProps={isDark ? {
+                  PaperProps: {
+                    sx: {
+                      bgcolor: '#2a2a2a',
+                      color: 'rgba(255,255,255,0.87)',
+                      '& .MuiMenuItem-root:hover': { bgcolor: 'rgba(255,255,255,0.08)' }
+                    }
+                  }
+                } : {}}
               >
                 <MenuItem value={1} sx={{ display: 'flow-root' }}>
                   <div style={{ float: 'left' }}>FHIR Bundle</div>
@@ -404,21 +501,119 @@ export function FileSystemContent() {
                   <div style={{ float: 'left' }}>FHIR Bulk Data</div>
                   <div style={{ float: 'right' }}>.ndjson</div>
                 </MenuItem>
+                <MenuItem value={5} sx={{ display: 'flow-root' }}>
+                  <div style={{ float: 'left' }}>Personal Health Record</div>
+                  <div style={{ float: 'right' }}>.phr</div>
+                </MenuItem>
               </Select>
             </FormControl>
+
+            {/* Collapsible Export Options */}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                mt: 2,
+                mb: optionsExpanded ? 1 : 0
+              }}
+              onClick={function() { setOptionsExpanded(!optionsExpanded); }}
+            >
+              <Typography variant="subtitle2" sx={{ color: textSecondary, flex: 1 }}>
+                Export Options
+              </Typography>
+              <IconButton size="small" sx={{ transform: optionsExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                <ExpandMoreIcon />
+              </IconButton>
+            </Box>
+            <Collapse in={optionsExpanded}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={coverLetter}
+                    onChange={handleToggleCoverLetter}
+                  />
+                }
+                label="Ensure cover letter exists (Composition)"
+              />
+              <br />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={patientSummary}
+                    onChange={handleTogglePatientSummary}
+                  />
+                }
+                label="Include International Patient Summary"
+              />
+              <br />
+              <Tooltip title="Coming soon" arrow>
+                <FormControlLabel
+                  control={<Checkbox disabled />}
+                  label={<Typography sx={{ color: textDisabled }}>Include referenced resources</Typography>}
+                />
+              </Tooltip>
+              <br />
+              <Tooltip title="Coming soon" arrow>
+                <FormControlLabel
+                  control={<Checkbox disabled />}
+                  label={<Typography sx={{ color: textDisabled }}>Include provenance records</Typography>}
+                />
+              </Tooltip>
+              <br />
+              <Tooltip title="Coming soon" arrow>
+                <FormControlLabel
+                  control={<Checkbox disabled />}
+                  label={<Typography sx={{ color: textDisabled }}>Include multimedia</Typography>}
+                />
+              </Tooltip>
+              <br />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={errorFilter}
+                    onChange={handleToggleErrorFilter}
+                  />
+                }
+                label="Filter Entered-in-Error records"
+              />
+              <br />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={patientFilterToggle}
+                    onChange={handleTogglePatientFilter}
+                  />
+                }
+                label="Filter by PatientID"
+              />
+              {patientFilterToggle && (
+                <FormControl fullWidth sx={{ mt: 1, mb: 1 }}>
+                  <InputLabel id="patient-filter-label">Patient Filter</InputLabel>
+                  <Input
+                    id="patientFilterInput"
+                    name="patientFilter"
+                    placeholder={"Patient/" + Random.id()}
+                    type="text"
+                    value={patientFilter}
+                    onChange={handleChangePatientFilter}
+                    fullWidth
+                  />
+                </FormControl>
+              )}
+              <br />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={normalizeIds}
+                    onChange={handleToggleNormalizeIds}
+                  />
+                }
+                label="Normalize _id values to strings"
+              />
+            </Collapse>
           </CardContent>
         </Card>
-
-        {/* Select Data Card */}
-        <Card sx={cardSx}>
-          <CardHeader title="Select Data to Export" />
-          <CardContent sx={{ maxHeight: 500, overflow: 'auto' }}>
-            <ExportResourceAccordion />
-          </CardContent>
-        </Card>
-
-        {/* Patient Card */}
-        {patientCardElement}
 
         {/* Prepare Data Button */}
         <Button
@@ -442,7 +637,21 @@ export function FileSystemContent() {
         minHeight: 0
       }}>
         <Card sx={{ ...cardSx, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <CardHeader title="Export Buffer Preview" />
+          <CardHeader
+            title="Export Buffer Preview"
+            action={
+              <Tooltip title={wordWrap ? 'Disable word wrap' : 'Enable word wrap'}>
+                <IconButton
+                  id="exportBufferWordwrapToggle"
+                  onClick={function() { setWordWrap(!wordWrap); }}
+                  color={wordWrap ? 'primary' : 'default'}
+                  sx={!wordWrap ? { color: textSecondary } : {}}
+                >
+                  <WrapTextIcon />
+                </IconButton>
+              </Tooltip>
+            }
+          />
           <CardContent sx={{ flex: 1, p: 0, '&:last-child': { pb: 0 }, overflow: 'hidden' }}>
             <AceEditor
               mode="json"
@@ -456,7 +665,7 @@ export function FileSystemContent() {
               showPrintMargin={false}
               showGutter={true}
               highlightActiveLine={false}
-              wrapEnabled={true}
+              wrapEnabled={wordWrap}
               setOptions={{
                 useWorker: false,
                 showLineNumbers: true,
@@ -467,7 +676,7 @@ export function FileSystemContent() {
         </Card>
       </Box>
 
-      {/* Column 3: Export Options + Download */}
+      {/* Column 3: Status + Download */}
       <Box sx={{
         overflow: 'auto',
         display: 'flex',
@@ -478,94 +687,6 @@ export function FileSystemContent() {
         <Alert severity={hasBuffer ? 'success' : 'info'}>
           {bufferSummary}
         </Alert>
-
-        {/* Export Options Card */}
-        <Card sx={cardSx}>
-          <CardHeader title="Export Options" />
-          <CardContent>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={coverLetter}
-                  onChange={handleToggleCoverLetter}
-                />
-              }
-              label="Ensure cover letter exists (Composition)"
-            />
-            <br />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={patientSummary}
-                  onChange={handleTogglePatientSummary}
-                />
-              }
-              label="Include International Patient Summary"
-            />
-            <br />
-            <Tooltip title="Coming soon" arrow>
-              <FormControlLabel
-                control={<Checkbox disabled />}
-                label={<Typography sx={{ color: 'text.disabled' }}>Include referenced resources</Typography>}
-              />
-            </Tooltip>
-            <br />
-            <Tooltip title="Coming soon" arrow>
-              <FormControlLabel
-                control={<Checkbox disabled />}
-                label={<Typography sx={{ color: 'text.disabled' }}>Include provenance records</Typography>}
-              />
-            </Tooltip>
-            <br />
-            <Tooltip title="Coming soon" arrow>
-              <FormControlLabel
-                control={<Checkbox disabled />}
-                label={<Typography sx={{ color: 'text.disabled' }}>Include multimedia</Typography>}
-              />
-            </Tooltip>
-            <br />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={errorFilter}
-                  onChange={handleToggleErrorFilter}
-                />
-              }
-              label="Filter Entered-in-Error records"
-            />
-            <br />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={patientFilterToggle}
-                  onChange={handleTogglePatientFilter}
-                />
-              }
-              label="Filter by PatientID"
-            />
-            {patientFilterToggle && (
-              <FormControl fullWidth sx={{ mt: 1, mb: 1 }}>
-                <InputLabel id="patient-filter-label">Patient Filter</InputLabel>
-                <Input
-                  id="patientFilterInput"
-                  name="patientFilter"
-                  placeholder={"Patient/" + Random.id()}
-                  type="text"
-                  value={patientFilter}
-                  onChange={handleChangePatientFilter}
-                  fullWidth
-                />
-              </FormControl>
-            )}
-            <br />
-            <Tooltip title="Coming soon" arrow>
-              <FormControlLabel
-                control={<Checkbox disabled />}
-                label={<Typography sx={{ color: 'text.disabled' }}>Zip and compress file</Typography>}
-              />
-            </Tooltip>
-          </CardContent>
-        </Card>
 
         {/* Download Card */}
         <Card sx={cardSx}>
@@ -620,6 +741,14 @@ export function FileSystemContent() {
                 >
                   Download
                 </Button>
+
+                <br />
+                <Tooltip title="Coming soon" arrow>
+                  <FormControlLabel
+                    control={<Checkbox disabled />}
+                    label={<Typography sx={{ color: textDisabled }}>Zip and compress file</Typography>}
+                  />
+                </Tooltip>
 
                 {/* Hidden anchor for triggering download */}
                 <a id="downloadAnchorElement" style={{ display: 'none' }}></a>

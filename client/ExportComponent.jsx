@@ -571,8 +571,10 @@ export function ExportComponent(props){
         break;
       case 2:
         console.log('Sending to warehouse...')
+        // rpc-migration: ddp-straggler
         Meteor.call('storeBundleToWarehouse', Session.get('exportBuffer'), function(error, result){
           if(error){console.error('error', error);}
+          // rpc-migration: ddp-straggler
           Meteor.call('getServerStats', function(error, result){
             if(result){
               Session.set('datalakeStats', result);
@@ -640,6 +642,7 @@ export function ExportComponent(props){
     console.log("Relay URL: " + JSON.stringify(relayUrl))
     alert("Relay URL: " + JSON.stringify(relayUrl))
 
+    // rpc-migration: ddp-straggler
     Meteor.call('postRelay', relayUrl, {}, JSON.parse(editorContent), Session.get('accountsAccessToken'), JSON.parse(editorContent), function(error, result){
       if(error){
         alert(JSON.stringify(error));

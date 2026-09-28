@@ -92,7 +92,7 @@ export function SelectDataContent() {
         <Card sx={cardSx}>
           <CardHeader title="Select Data to Export" />
           <CardContent sx={{ maxHeight: 500, overflow: 'auto' }}>
-            <ExportResourceAccordion />
+            <ExportResourceAccordion isDark={isDark} />
           </CardContent>
         </Card>
       </Box>
@@ -109,7 +109,7 @@ export function SelectDataContent() {
           <CardContent>
             {totalSelected > 0 ? (
               <>
-                <Alert severity="success" sx={{ mb: 2 }}>
+                <Alert severity="success" sx={{ mb: 2, ...(isDark ? { bgcolor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.87)' } : {}) }}>
                   {totalSelected} resource{totalSelected !== 1 ? 's' : ''} selected for export.
                 </Alert>
                 <Typography variant="body2" color="text.secondary">
@@ -117,7 +117,7 @@ export function SelectDataContent() {
                 </Typography>
               </>
             ) : (
-              <Alert severity="info">
+              <Alert severity="info" sx={isDark ? { bgcolor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.87)' } : {}}>
                 Use the checkboxes on the left to select which resources to include in your export.
                 You can select individual resources or entire resource types.
               </Alert>

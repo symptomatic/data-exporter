@@ -1,7 +1,10 @@
 /* xlsx.js (C) 2013-present  SheetJS -- http://sheetjs.com */
 import { Meteor } from 'meteor/meteor';
 import { check } from 'meteor/check';
-import { HTTP } from 'meteor/http';
+// (removed `import { HTTP } from 'meteor/http'` — a dead import. The deprecated
+// meteor/http package was pulled in by the Atmosphere api.use('http') but is not
+// in the main app, and HTTP is never used in this file. The project convention
+// for new HTTP calls is meteor/fetch.)
 import { get } from 'lodash';
 
 
