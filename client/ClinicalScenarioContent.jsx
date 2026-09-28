@@ -5,7 +5,7 @@
 // right column shows resource preview via DynamicFhirViews or AceEditor.
 // Adapted from data-importer FileDropTab EmptyStatePanel — standalone, no ImportStoreContext.
 
-import React, { useState, useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Meteor } from 'meteor/meteor';
 import { get } from 'lodash';
 
@@ -14,6 +14,7 @@ import {
   Card,
   CardHeader,
   CardContent,
+  CardActions,
   Typography,
   Button,
   Autocomplete,
@@ -40,7 +41,8 @@ import {
   Code as RawIcon,
   UnfoldMore as ExpandAllIcon,
   UnfoldLess as CollapseAllIcon,
-  DeleteSweep as ClearIcon
+  DeleteSweep as ClearIcon,
+  FileDownload as DownloadIcon
 } from '@mui/icons-material';
 
 import AceEditor from 'react-ace';
@@ -57,7 +59,7 @@ var COMMON_TYPES = [
   'MedicationRequest', 'AllergyIntolerance', 'Immunization', 'CarePlan',
   'Goal', 'DiagnosticReport', 'DocumentReference', 'Organization',
   'Practitioner', 'Medication', 'Device', 'Consent', 'CareTeam',
-  'ServiceRequest', 'Questionnaire', 'QuestionnaireResponse'
+  'ServiceRequest', 'Questionnaire', 'QuestionnaireResponse', 'List'
 ];
 
 // =============================================================================
@@ -373,6 +375,66 @@ function ClinicalScenarioContent() {
 
   var accordionRef = useRef(null);
 
+  // The collection picker enumerates client-side minimongo, but Lists only
+  // live server-side when autopublish is off — pull them via RPC (which is
+  // coatcheck-scoped server-side: elevated roles get everything, patient-role
+  // gets own-subject + simulator Lists) and warm the local cache so List (n)
+  // appears in the picker like any other type.
+  var listsLoadedState = useState(0);
+  var setListsLoaded = listsLoadedState[1];
+  useEffect(function() {
+    if (!Meteor.userId()) return;
+    Meteor.rpc('lists.search', {}).then(function(lists) {
+      var Lists = Meteor.Collections && Meteor.Collections.Lists;
+      if (!Lists || !Array.isArray(lists)) return;
+      lists.forEach(function(doc) {
+        if (doc && doc._id) {
+          Lists._collection.upsert({ _id: doc._id }, { $set: doc });
+        }
+      });
+      setListsLoaded(lists.length);
+      console.log('[ClinicalScenarioContent] Cached', lists.length, 'List resources for export');
+    }).catch(function(error) {
+      console.warn('[ClinicalScenarioContent] lists.search error:', error.reason || error.message);
+    });
+  }, []);
+
+  // Deep-link preload: ?resource=list&id=<listId> loads that single resource
+  // into the export panel directly (e.g. the hexgrid-table Export Tiles
+  // button), skipping the collection picker. Lists fetch via the scoped RPC;
+  // other resource types resolve from the client cache.
+  useEffect(function() {
+    var params = new URLSearchParams(window.location.search);
+    var resourceParam = params.get('resource');
+    var idParam = params.get('id');
+    if (!resourceParam || !idParam) return;
+
+    var resourceType = resourceParam.charAt(0).toUpperCase() + resourceParam.slice(1);
+
+    function preload(doc) {
+      if (!doc) {
+        console.warn('[ClinicalScenarioContent] Deep-link resource not found:', resourceType, idParam);
+        return;
+      }
+      setResourceList([doc]);
+      setSelectedResourceIndex(0);
+      console.log('[ClinicalScenarioContent] Preloaded', resourceType + '/' + idParam, 'from deep link');
+    }
+
+    if (resourceType === 'List') {
+      Meteor.rpc('lists.findOne', { listId: idParam }).then(preload).catch(function(error) {
+        console.warn('[ClinicalScenarioContent] Deep-link lists.findOne error:', error.reason || error.message);
+      });
+    } else {
+      // Client-cache fallback for other resource types (pluralized name)
+      var pluralName = resourceType.endsWith('y')
+        ? resourceType.slice(0, -1) + 'ies'
+        : resourceType + 's';
+      var collection = Meteor.Collections && Meteor.Collections[pluralName];
+      preload(collection ? collection.findOne({ _id: idParam }) : null);
+    }
+  }, []);
+
   // Build list of available collections (those with data)
   var availableCollections = [];
   if (Meteor.Collections) {
@@ -434,6 +496,28 @@ function ClinicalScenarioContent() {
 
   function handleCollapseAll() {
     if (accordionRef.current) accordionRef.current.collapseAll();
+  }
+
+  function handleDownloadNdjson() {
+    if (!resourceList.length) return;
+    var ndjson = resourceList.map(function(resource) {
+      return JSON.stringify(resource);
+    }).join('\n') + '\n';
+    // Single-List downloads (e.g. hexgrid Export Tiles) name the file after
+    // the List; multi-resource loads get the generic scenario name
+    var fileName = (resourceList.length === 1 && resourceList[0].id)
+      ? resourceList[0].id + '.ndjson'
+      : 'clinical-scenario.ndjson';
+    var blob = new Blob([ndjson], { type: 'application/x-ndjson;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+    console.log('[ClinicalScenarioContent] Downloaded', resourceList.length, 'resources as', fileName);
   }
 
   function handleClear() {
@@ -643,6 +727,20 @@ function ClinicalScenarioContent() {
             </Box>
           )}
         </CardContent>
+        {/* Fixed action row — flexShrink 0 keeps the greedy CardContent above
+            it scrolling while the button stays pinned to the card bottom */}
+        <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2, flexShrink: 0 }}>
+          <Button
+            id="downloadScenarioNdjsonButton"
+            color="primary"
+            variant="contained"
+            startIcon={<DownloadIcon />}
+            onClick={handleDownloadNdjson}
+            disabled={isEmpty}
+          >
+            Download NDJSON
+          </Button>
+        </CardActions>
       </Card>
 
       {/* Right Column: Resource Preview */}

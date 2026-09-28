@@ -37,6 +37,7 @@ import {
 } from '@mui/material';
 
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import WrapTextIcon from '@mui/icons-material/WrapText';
 
 import ExportResourceAccordion from './ExportResourceAccordion.jsx';
 import MedicalRecordsExporter from '../lib/MedicalRecordsExporter';
@@ -136,6 +137,9 @@ export function FileSystemContent() {
     case 2:
       downloadFileExtension = '.ndjson';
       break;
+    case 5:
+      downloadFileExtension = '.phr';
+      break;
     default:
       downloadFileExtension = '.json';
       break;
@@ -151,6 +155,7 @@ export function FileSystemContent() {
   var [patientFilter, setPatientFilter] = useState('');
   var [normalizeIds, setNormalizeIds] = useState(false);
   var [optionsExpanded, setOptionsExpanded] = useState(false);
+  var [wordWrap, setWordWrap] = useState(true);
 
   function handleToggleCoverLetter(event) {
     var checked = event.target.checked;
@@ -228,6 +233,8 @@ export function FileSystemContent() {
         );
         break;
       case 2:
+      case 5:
+        // .phr (Personal Health Record) is an alias of .ndjson — same bulk data pipeline
         MedicalRecordsExporter.exportBulkData(
           filterValue,
           exportErrorFilter,
@@ -392,6 +399,14 @@ export function FileSystemContent() {
         blob = new Blob([ndjsonContent], { type: 'application/x-ndjson;charset=utf-8;' });
         break;
       }
+      case 5: {
+        var phrContent = exportBuffer;
+        if (typeof exportBuffer === 'object') {
+          phrContent = JSON.stringify(exportBuffer);
+        }
+        blob = new Blob([phrContent], { type: 'application/phr;charset=utf-8;' });
+        break;
+      }
       default: {
         var defaultContent;
         if (typeof exportBuffer === 'object') {
@@ -485,6 +500,10 @@ export function FileSystemContent() {
                 <MenuItem value={2} sx={{ display: 'flow-root' }}>
                   <div style={{ float: 'left' }}>FHIR Bulk Data</div>
                   <div style={{ float: 'right' }}>.ndjson</div>
+                </MenuItem>
+                <MenuItem value={5} sx={{ display: 'flow-root' }}>
+                  <div style={{ float: 'left' }}>Personal Health Record</div>
+                  <div style={{ float: 'right' }}>.phr</div>
                 </MenuItem>
               </Select>
             </FormControl>
@@ -618,7 +637,21 @@ export function FileSystemContent() {
         minHeight: 0
       }}>
         <Card sx={{ ...cardSx, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <CardHeader title="Export Buffer Preview" />
+          <CardHeader
+            title="Export Buffer Preview"
+            action={
+              <Tooltip title={wordWrap ? 'Disable word wrap' : 'Enable word wrap'}>
+                <IconButton
+                  id="exportBufferWordwrapToggle"
+                  onClick={function() { setWordWrap(!wordWrap); }}
+                  color={wordWrap ? 'primary' : 'default'}
+                  sx={!wordWrap ? { color: textSecondary } : {}}
+                >
+                  <WrapTextIcon />
+                </IconButton>
+              </Tooltip>
+            }
+          />
           <CardContent sx={{ flex: 1, p: 0, '&:last-child': { pb: 0 }, overflow: 'hidden' }}>
             <AceEditor
               mode="json"
@@ -632,7 +665,7 @@ export function FileSystemContent() {
               showPrintMargin={false}
               showGutter={true}
               highlightActiveLine={false}
-              wrapEnabled={true}
+              wrapEnabled={wordWrap}
               setOptions={{
                 useWorker: false,
                 showLineNumbers: true,
