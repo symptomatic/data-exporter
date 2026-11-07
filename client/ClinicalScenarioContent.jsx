@@ -26,10 +26,6 @@ import {
   Alert,
   CircularProgress,
   Collapse,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   IconButton,
   Tooltip,
   Badge,
@@ -580,6 +576,8 @@ function ClinicalScenarioContent() {
 
   function handleSelectResource(index, resource) {
     setSelectedResourceIndex(index);
+    // Picking a resource takes the right card back to single-resource preview.
+    setPreviewOpen(false);
   }
 
   function handleModeChange(e, newMode) {
@@ -866,60 +864,7 @@ function ClinicalScenarioContent() {
         </CardActions>
       </Card>
 
-      {/* NDJSON preview dialog — the exact Download payload, one object per
-          line. Guarded mount so the (potentially large) string only builds
-          while the dialog is open; display truncates at 2 MB but Copy and
-          Download always act on the full payload. */}
-      {previewOpen && (function() {
-        var built = buildNdjson();
-        var sizeKb = (built.ndjson.length / 1024).toFixed(1);
-        var DISPLAY_CAP = 2 * 1024 * 1024;
-        var truncated = built.ndjson.length > DISPLAY_CAP;
-        var displayText = truncated ? built.ndjson.substring(0, DISPLAY_CAP) : built.ndjson;
-        return (
-          <Dialog
-            id="ndjsonPreviewDialog"
-            open={previewOpen}
-            onClose={function() { setPreviewOpen(false); }}
-            maxWidth="md"
-            fullWidth
-          >
-            <DialogTitle sx={{ pb: 0.5 }}>
-              NDJSON preview
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                {built.fileName} · {resourceList.length} resource{resourceList.length === 1 ? '' : 's'} · {sizeKb} KB · one JSON object per line
-              </Typography>
-            </DialogTitle>
-            <DialogContent dividers sx={{ p: 0 }}>
-              {truncated && (
-                <Alert severity="info" sx={{ borderRadius: 0 }}>
-                  Showing the first 2 MB — Copy and Download include the full payload.
-                </Alert>
-              )}
-              <Box component="pre" sx={{
-                m: 0, px: 2, py: 1.5, maxHeight: '60vh', overflow: 'auto',
-                fontFamily: 'monospace', fontSize: '0.75rem', lineHeight: 1.6,
-                whiteSpace: 'pre', bgcolor: 'action.hover'
-              }}>
-                {displayText}
-              </Box>
-            </DialogContent>
-            <DialogActions>
-              <Button startIcon={<CopyIcon />} onClick={handleCopyNdjson}>
-                Copy
-              </Button>
-              <Button startIcon={<DownloadIcon />} onClick={handleDownloadNdjson}>
-                Download
-              </Button>
-              <Button variant="contained" onClick={function() { setPreviewOpen(false); }}>
-                Close
-              </Button>
-            </DialogActions>
-          </Dialog>
-        );
-      })()}
-
-      {/* Right Column: Resource Preview */}
+      {/* Right Column: Resource Preview (doubles as the NDJSON preview) */}
       <Card sx={{
         display: 'flex', flexDirection: 'column', overflow: 'hidden',
         bgcolor: cardBgColor, color: cardTextColor,
@@ -927,7 +872,26 @@ function ClinicalScenarioContent() {
         '& .MuiIconButton-root': { color: cardTextColor }
       }}>
         <CardHeader
-          title="Resource Preview"
+          title={previewOpen ? 'NDJSON Preview' : 'Resource Preview'}
+          action={previewOpen ? (
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <Tooltip title="Copy NDJSON">
+                <IconButton size="small" onClick={handleCopyNdjson}>
+                  <CopyIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Download NDJSON">
+                <IconButton size="small" onClick={handleDownloadNdjson}>
+                  <DownloadIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Back to resource preview">
+                <IconButton size="small" onClick={function() { setPreviewOpen(false); }}>
+                  <ClearIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          ) : null}
           sx={{
             borderBottom: 1,
             borderColor: dividerColor,
@@ -935,8 +899,29 @@ function ClinicalScenarioContent() {
             '& .MuiCardHeader-title': { fontSize: '1.1rem' }
           }}
         />
-        <CardContent sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-          {selectedResource && DynamicFhirViews ? (
+        <CardContent sx={{ flex: 1, overflow: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          {previewOpen ? (function() {
+            var built = buildNdjson();
+            var sizeKb = (built.ndjson.length / 1024).toFixed(1);
+            var DISPLAY_CAP = 2 * 1024 * 1024;
+            var truncated = built.ndjson.length > DISPLAY_CAP;
+            var displayText = truncated ? built.ndjson.substring(0, DISPLAY_CAP) : built.ndjson;
+            return (
+              <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="caption" sx={{ color: textSecondary, mb: 1, flexShrink: 0 }}>
+                  {built.fileName} · {resourceList.length} resource{resourceList.length === 1 ? '' : 's'} · {sizeKb} KB · one JSON object per line
+                  {truncated ? ' · showing the first 2 MB — Copy and Download include the full payload' : ''}
+                </Typography>
+                <Box component="pre" sx={{
+                  m: 0, p: 1.5, flex: 1, minHeight: 0, overflow: 'auto',
+                  fontFamily: 'monospace', fontSize: '0.75rem', lineHeight: 1.6,
+                  whiteSpace: 'pre', bgcolor: 'action.hover', borderRadius: 1
+                }}>
+                  {displayText}
+                </Box>
+              </Box>
+            );
+          })() : selectedResource && DynamicFhirViews ? (
             <DynamicFhirViews
               fhirResource={selectedResource}
               embedded={true}
