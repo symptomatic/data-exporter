@@ -71,8 +71,9 @@ var COMMON_TYPES = [
 
 // Structural / terminology (non-PHI) types are ALWAYS offered, even with an
 // empty client cache: nothing on this page subscribes to them, so their
-// Minimongo count is 0 until Load Selected hydrates them via the
-// autopublish.<Collection> publication (subscribe-on-load below).
+// Minimongo count is 0 until Load Selected snapshot-fetches them over rpc
+// (exportData.fetchCollection — works without autopublish publications and
+// without the subscription limit).
 var STRUCTURAL_TYPES = [
   'CodeSystem', 'ValueSet', 'ConceptMap', 'NamingSystem',
   'StructureDefinition', 'SearchParameter', 'Questionnaire',
@@ -503,82 +504,58 @@ function ClinicalScenarioContent() {
         return COMMON_TYPES.indexOf(c.type) !== -1 || STRUCTURAL_TYPES.indexOf(c.type) !== -1;
       });
 
-  // Subscribe to autopublish.<Collection> and resolve when ready — the
-  // structural types have no page subscription, so Minimongo is empty until
-  // this hydrates it. Handles are kept for the page's lifetime (stopped on
-  // unmount) so re-loads are instant.
-  var subsRef = useRef({});
-
-  useEffect(function() {
-    return function() {
-      Object.keys(subsRef.current).forEach(function(key) {
-        try { subsRef.current[key].stop(); } catch (e) { /* already stopped */ }
-      });
-    };
-  }, []);
-
-  function ensureSubscribed(pluralName) {
-    return new Promise(function(resolve) {
-      if (subsRef.current[pluralName] && subsRef.current[pluralName].ready()) {
-        resolve(true);
-        return;
-      }
-      var timeout = setTimeout(function() {
-        console.warn('[ClinicalScenarioContent] Subscription timeout for', pluralName);
-        resolve(false);
-      }, 15000);
-      subsRef.current[pluralName] = Meteor.subscribe('autopublish.' + pluralName, {}, {}, {
-        onReady: function() { clearTimeout(timeout); resolve(true); },
-        onStop: function(error) {
-          clearTimeout(timeout);
-          if (error) console.warn('[ClinicalScenarioContent] Subscription failed for', pluralName, error.reason || error.message);
-          resolve(false);
-        }
-      });
-    });
-  }
-
+  // Load Selected = SERVER SNAPSHOT. Deployments commonly run without
+  // autopublish publications (settings.private.fhir.autopublishSubscriptions
+  // false), and even when present those clamp at the subscription limit — an
+  // export must never silently inherit either. Collections already hydrated
+  // on this page (Patients via the global tracker, Lists) read from the
+  // client cache; everything else snapshot-fetches over rpc
+  // (exportData.fetchCollection, auth-required, patient-scoped refused).
   var loadBusyState = useState(false);
   var loadBusy = loadBusyState[0];
   var setLoadBusy = loadBusyState[1];
 
-  var previewOpenState = useState(false);
-  var previewOpen = previewOpenState[0];
-  var setPreviewOpen = previewOpenState[1];
-
-  function handleCopyNdjson() {
-    try {
-      navigator.clipboard.writeText(buildNdjson().ndjson);
-    } catch (error) {
-      console.warn('[ClinicalScenarioContent] Clipboard copy failed:', error.message);
-    }
-  }
+  var loadFeedbackState = useState(null); // { severity, message } | null
+  var loadFeedback = loadFeedbackState[0];
+  var setLoadFeedback = loadFeedbackState[1];
 
   async function handleLoadFromCollection() {
     setLoadBusy(true);
+    setLoadFeedback(null);
     try {
-      // Hydrate any selected collection whose client cache is empty.
-      var hydrations = selectedCollections
-        .filter(function(item) {
-          var collection = Meteor.Collections[item.plural];
-          return collection && collection.find({}).count() === 0;
-        })
-        .map(function(item) { return ensureSubscribed(item.plural); });
-      if (hydrations.length > 0) {
-        await Promise.all(hydrations);
+      var allResources = [];
+      var problems = [];
+
+      for (var i = 0; i < selectedCollections.length; i++) {
+        var item = selectedCollections[i];
+        var collection = Meteor.Collections[item.plural];
+        var cached = collection ? collection.find({}).fetch() : [];
+        if (cached.length > 0) {
+          allResources = allResources.concat(cached);
+          continue;
+        }
+        try {
+          var result = await Meteor.rpc('exportData.fetchCollection', { collectionName: item.plural });
+          var fetched = get(result, 'resources', []) || [];
+          allResources = allResources.concat(fetched);
+          if (get(result, 'truncated')) {
+            problems.push(item.type + ' truncated at ' + fetched.length + ' of ' + get(result, 'total', '?'));
+          }
+        } catch (error) {
+          problems.push(item.type + ': ' + (error.reason || error.message));
+        }
       }
 
-      var allResources = [];
-      selectedCollections.forEach(function(item) {
-        var collection = Meteor.Collections[item.plural];
-        if (collection) {
-          var records = collection.find({}).fetch();
-          allResources = allResources.concat(records);
-        }
-      });
-
+      if (problems.length > 0) {
+        setLoadFeedback({
+          severity: allResources.length > 0 ? 'warning' : 'error',
+          message: problems.join(' \u00b7 ')
+        });
+      }
       if (allResources.length === 0) {
-        console.warn('[ClinicalScenarioContent] No resources found for selection (collections empty server-side too?)');
+        if (problems.length === 0) {
+          setLoadFeedback({ severity: 'info', message: 'No resources found for the selected types.' });
+        }
         return;
       }
       console.log('[ClinicalScenarioContent] Loaded', allResources.length, 'resources from', selectedCollections.length, 'collections');
@@ -806,6 +783,15 @@ function ClinicalScenarioContent() {
                 {showAll ? 'Common Types' : 'Show All'}
               </Button>
             </Box>
+            {loadFeedback && (
+              <Alert
+                severity={loadFeedback.severity}
+                sx={{ mt: 1 }}
+                onClose={function() { setLoadFeedback(null); }}
+              >
+                {loadFeedback.message}
+              </Alert>
+            )}
           </Box>
 
           {/* Resource List */}

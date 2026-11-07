@@ -5,3 +5,4 @@
 // operations). methods.proxy.js is self-contained (Meteor/check/HTTP/lodash).
 
 import './methods.proxy.js';
+import './methods.export.js';
