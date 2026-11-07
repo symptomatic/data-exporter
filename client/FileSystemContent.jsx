@@ -47,6 +47,8 @@ import 'ace-builds/src-noconflict/mode-json';
 import 'ace-builds/src-noconflict/theme-monokai';
 import 'ace-builds/src-noconflict/theme-github';
 
+import StashToContextButton from '/imports/ui/ContextSidebar/StashToContextButton.jsx';
+
 // Resolve collections at startup
 var Patients;
 Meteor.startup(function() {
@@ -741,6 +743,25 @@ export function FileSystemContent() {
                 >
                   Download
                 </Button>
+
+                <StashToContextButton
+                  id="stashExportToContextButton"
+                  disabled={!hasBuffer}
+                  variant="outlined"
+                  sx={{ mt: 1, width: '100%' }}
+                  getPayload={function() {
+                    if (!exportBuffer) return null;
+                    var label = (downloadFileName || 'export') + downloadFileExtension;
+                    // Prepared buffer is a FHIR object (CCD Bundle) or an
+                    // NDJSON/string blob — the button stashes either shape.
+                    if (typeof exportBuffer === 'object') {
+                      return { resource: exportBuffer, label: label, source: { route: window.location.pathname } };
+                    }
+                    return { text: String(exportBuffer), label: label, source: { route: window.location.pathname } };
+                  }}
+                >
+                  Stash to Context
+                </StashToContextButton>
 
                 <br />
                 <Tooltip title="Coming soon" arrow>

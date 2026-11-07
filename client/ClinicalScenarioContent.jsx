@@ -45,13 +45,31 @@ import {
   DeleteSweep as ClearIcon,
   FileDownload as DownloadIcon,
   Preview as PreviewIcon,
-  ContentCopy as CopyIcon
+  ContentCopy as CopyIcon,
+  Inventory2Outlined as StashIcon
 } from '@mui/icons-material';
 
 import AceEditor from 'react-ace';
 import 'ace-builds/src-noconflict/mode-json';
 import 'ace-builds/src-noconflict/theme-monokai';
 import 'ace-builds/src-noconflict/theme-github';
+
+import StashToContextButton from '/imports/ui/ContextSidebar/StashToContextButton.jsx';
+import { contextSidebarStore } from '/imports/lib/contextSidebar/contextSidebarStore.js';
+import { notify } from '/imports/lib/notify.js';
+
+// Per-row stash into the ContextSidebar (any export is stashable).
+function stashRowResource(resource) {
+  contextSidebarStore.stashResource(resource, {
+    source: { route: window.location.pathname }
+  }).then(function() {
+    if (!contextSidebarStore.isOpen()) {
+      notify({ title: 'Stashed to Context', message: '⌃⇧P to open the panel', severity: 'success' });
+    }
+  }).catch(function(error) {
+    notify({ title: 'Stash failed', message: error.reason || error.message, severity: 'error' });
+  });
+}
 
 // =============================================================================
 // CONSTANTS
@@ -265,6 +283,18 @@ var ScenarioResourceAccordion = forwardRef(function ScenarioResourceAccordion(pr
                     severity={severity}
                     action={
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Tooltip title="Stash to Context (⌃⇧P)">
+                          <IconButton
+                            size="small"
+                            sx={{ color: isDark ? 'rgba(255,255,255,0.7)' : undefined }}
+                            onClick={function(e) {
+                              e.stopPropagation();
+                              stashRowResource(resource);
+                            }}
+                          >
+                            <StashIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="Preview resource">
                           <IconButton
                             size="small"
@@ -842,6 +872,20 @@ function ClinicalScenarioContent() {
         {/* Fixed action row — flexShrink 0 keeps the greedy CardContent above
             it scrolling while the button stays pinned to the card bottom */}
         <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2, flexShrink: 0 }}>
+          <StashToContextButton
+            id="stashScenarioToContextButton"
+            disabled={isEmpty}
+            getPayload={function() {
+              if (!resourceList.length) return null;
+              return {
+                resources: resourceList,
+                label: 'Clinical scenario · ' + resourceList.length + ' resources',
+                source: { route: window.location.pathname }
+              };
+            }}
+          >
+            Stash to Context
+          </StashToContextButton>
           <Button
             id="previewScenarioNdjsonButton"
             variant="outlined"
