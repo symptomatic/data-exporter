@@ -519,6 +519,18 @@ function ClinicalScenarioContent() {
   var loadFeedback = loadFeedbackState[0];
   var setLoadFeedback = loadFeedbackState[1];
 
+  var previewOpenState = useState(false);
+  var previewOpen = previewOpenState[0];
+  var setPreviewOpen = previewOpenState[1];
+
+  function handleCopyNdjson() {
+    try {
+      navigator.clipboard.writeText(buildNdjson().ndjson);
+    } catch (error) {
+      console.warn('[ClinicalScenarioContent] Clipboard copy failed:', error.message);
+    }
+  }
+
   async function handleLoadFromCollection() {
     setLoadBusy(true);
     setLoadFeedback(null);
