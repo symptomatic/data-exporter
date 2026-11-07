@@ -26,6 +26,10 @@ import {
   Alert,
   CircularProgress,
   Collapse,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   IconButton,
   Tooltip,
   Badge,
@@ -43,7 +47,9 @@ import {
   UnfoldMore as ExpandAllIcon,
   UnfoldLess as CollapseAllIcon,
   DeleteSweep as ClearIcon,
-  FileDownload as DownloadIcon
+  FileDownload as DownloadIcon,
+  Preview as PreviewIcon,
+  ContentCopy as CopyIcon
 } from '@mui/icons-material';
 
 import AceEditor from 'react-ace';
@@ -536,6 +542,18 @@ function ClinicalScenarioContent() {
   var loadBusy = loadBusyState[0];
   var setLoadBusy = loadBusyState[1];
 
+  var previewOpenState = useState(false);
+  var previewOpen = previewOpenState[0];
+  var setPreviewOpen = previewOpenState[1];
+
+  function handleCopyNdjson() {
+    try {
+      navigator.clipboard.writeText(buildNdjson().ndjson);
+    } catch (error) {
+      console.warn('[ClinicalScenarioContent] Clipboard copy failed:', error.message);
+    }
+  }
+
   async function handleLoadFromCollection() {
     setLoadBusy(true);
     try {
@@ -587,8 +605,9 @@ function ClinicalScenarioContent() {
     if (accordionRef.current) accordionRef.current.collapseAll();
   }
 
-  function handleDownloadNdjson() {
-    if (!resourceList.length) return;
+  // One JSON object per line — the exact payload Download writes, shared by
+  // the preview dialog so what you see is what you get.
+  function buildNdjson() {
     var ndjson = resourceList.map(function(resource) {
       return JSON.stringify(resource);
     }).join('\n') + '\n';
@@ -597,6 +616,14 @@ function ClinicalScenarioContent() {
     var fileName = (resourceList.length === 1 && resourceList[0].id)
       ? resourceList[0].id + '.ndjson'
       : 'clinical-scenario.ndjson';
+    return { ndjson: ndjson, fileName: fileName };
+  }
+
+  function handleDownloadNdjson() {
+    if (!resourceList.length) return;
+    var built = buildNdjson();
+    var ndjson = built.ndjson;
+    var fileName = built.fileName;
     var blob = new Blob([ndjson], { type: 'application/x-ndjson;charset=utf-8;' });
     var url = URL.createObjectURL(blob);
     var anchor = document.createElement('a');
@@ -820,6 +847,15 @@ function ClinicalScenarioContent() {
             it scrolling while the button stays pinned to the card bottom */}
         <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2, flexShrink: 0 }}>
           <Button
+            id="previewScenarioNdjsonButton"
+            variant="outlined"
+            startIcon={<PreviewIcon />}
+            onClick={function() { setPreviewOpen(true); }}
+            disabled={isEmpty}
+          >
+            Preview NDJSON
+          </Button>
+          <Button
             id="downloadScenarioNdjsonButton"
             color="primary"
             variant="contained"
@@ -831,6 +867,59 @@ function ClinicalScenarioContent() {
           </Button>
         </CardActions>
       </Card>
+
+      {/* NDJSON preview dialog — the exact Download payload, one object per
+          line. Guarded mount so the (potentially large) string only builds
+          while the dialog is open; display truncates at 2 MB but Copy and
+          Download always act on the full payload. */}
+      {previewOpen && (function() {
+        var built = buildNdjson();
+        var sizeKb = (built.ndjson.length / 1024).toFixed(1);
+        var DISPLAY_CAP = 2 * 1024 * 1024;
+        var truncated = built.ndjson.length > DISPLAY_CAP;
+        var displayText = truncated ? built.ndjson.substring(0, DISPLAY_CAP) : built.ndjson;
+        return (
+          <Dialog
+            id="ndjsonPreviewDialog"
+            open={previewOpen}
+            onClose={function() { setPreviewOpen(false); }}
+            maxWidth="md"
+            fullWidth
+          >
+            <DialogTitle sx={{ pb: 0.5 }}>
+              NDJSON preview
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                {built.fileName} · {resourceList.length} resource{resourceList.length === 1 ? '' : 's'} · {sizeKb} KB · one JSON object per line
+              </Typography>
+            </DialogTitle>
+            <DialogContent dividers sx={{ p: 0 }}>
+              {truncated && (
+                <Alert severity="info" sx={{ borderRadius: 0 }}>
+                  Showing the first 2 MB — Copy and Download include the full payload.
+                </Alert>
+              )}
+              <Box component="pre" sx={{
+                m: 0, px: 2, py: 1.5, maxHeight: '60vh', overflow: 'auto',
+                fontFamily: 'monospace', fontSize: '0.75rem', lineHeight: 1.6,
+                whiteSpace: 'pre', bgcolor: 'action.hover'
+              }}>
+                {displayText}
+              </Box>
+            </DialogContent>
+            <DialogActions>
+              <Button startIcon={<CopyIcon />} onClick={handleCopyNdjson}>
+                Copy
+              </Button>
+              <Button startIcon={<DownloadIcon />} onClick={handleDownloadNdjson}>
+                Download
+              </Button>
+              <Button variant="contained" onClick={function() { setPreviewOpen(false); }}>
+                Close
+              </Button>
+            </DialogActions>
+          </Dialog>
+        );
+      })()}
 
       {/* Right Column: Resource Preview */}
       <Card sx={{
