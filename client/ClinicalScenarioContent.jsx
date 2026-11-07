@@ -24,6 +24,7 @@ import {
   AccordionSummary,
   AccordionDetails,
   Alert,
+  CircularProgress,
   Collapse,
   IconButton,
   Tooltip,
@@ -61,6 +62,24 @@ var COMMON_TYPES = [
   'Practitioner', 'Medication', 'Device', 'Consent', 'CareTeam',
   'ServiceRequest', 'Questionnaire', 'QuestionnaireResponse', 'List'
 ];
+
+// Structural / terminology (non-PHI) types are ALWAYS offered, even with an
+// empty client cache: nothing on this page subscribes to them, so their
+// Minimongo count is 0 until Load Selected hydrates them via the
+// autopublish.<Collection> publication (subscribe-on-load below).
+var STRUCTURAL_TYPES = [
+  'CodeSystem', 'ValueSet', 'ConceptMap', 'NamingSystem',
+  'StructureDefinition', 'SearchParameter', 'Questionnaire',
+  'PlanDefinition', 'ActivityDefinition', 'Library', 'Measure',
+  'Medication', 'Organization', 'Location', 'Practitioner',
+  'PractitionerRole', 'HealthcareService', 'Endpoint', 'InsurancePlan', 'List'
+];
+
+function pluralizeType(typeName) {
+  return typeName.endsWith('y')
+    ? typeName.slice(0, -1) + 'ies'
+    : typeName + 's';
+}
 
 // =============================================================================
 // RESOURCE SUMMARY HELPERS (inlined to avoid cross-package dependency)
@@ -435,8 +454,11 @@ function ClinicalScenarioContent() {
     }
   }, []);
 
-  // Build list of available collections (those with data)
+  // Build list of available collections: anything with client-cache data,
+  // PLUS the structural (non-PHI) types — those show count 0 until loaded,
+  // because their documents live server-side until we subscribe on demand.
   var availableCollections = [];
+  var seenPlurals = {};
   if (Meteor.Collections) {
     Object.keys(Meteor.Collections).forEach(function(pluralName) {
       var collection = Meteor.Collections[pluralName];
@@ -453,33 +475,100 @@ function ClinicalScenarioContent() {
               typeName = typeName.slice(0, -1);
             }
             availableCollections.push({ type: typeName, plural: pluralName, count: count });
+            seenPlurals[pluralName] = true;
           }
         } catch (e) {
           // skip
         }
       }
     });
+    STRUCTURAL_TYPES.forEach(function(typeName) {
+      var pluralName = pluralizeType(typeName);
+      if (!seenPlurals[pluralName] && Meteor.Collections[pluralName]) {
+        availableCollections.push({ type: typeName, plural: pluralName, count: 0 });
+      }
+    });
+    availableCollections.sort(function(a, b) { return a.type.localeCompare(b.type); });
   }
 
   var displayCollections = showAll
     ? availableCollections
-    : availableCollections.filter(function(c) { return COMMON_TYPES.indexOf(c.type) !== -1; });
+    : availableCollections.filter(function(c) {
+        return COMMON_TYPES.indexOf(c.type) !== -1 || STRUCTURAL_TYPES.indexOf(c.type) !== -1;
+      });
 
-  function handleLoadFromCollection() {
-    var allResources = [];
+  // Subscribe to autopublish.<Collection> and resolve when ready — the
+  // structural types have no page subscription, so Minimongo is empty until
+  // this hydrates it. Handles are kept for the page's lifetime (stopped on
+  // unmount) so re-loads are instant.
+  var subsRef = useRef({});
 
-    selectedCollections.forEach(function(item) {
-      var collection = Meteor.Collections[item.plural];
-      if (collection) {
-        var records = collection.find({}).fetch();
-        allResources = allResources.concat(records);
+  useEffect(function() {
+    return function() {
+      Object.keys(subsRef.current).forEach(function(key) {
+        try { subsRef.current[key].stop(); } catch (e) { /* already stopped */ }
+      });
+    };
+  }, []);
+
+  function ensureSubscribed(pluralName) {
+    return new Promise(function(resolve) {
+      if (subsRef.current[pluralName] && subsRef.current[pluralName].ready()) {
+        resolve(true);
+        return;
       }
+      var timeout = setTimeout(function() {
+        console.warn('[ClinicalScenarioContent] Subscription timeout for', pluralName);
+        resolve(false);
+      }, 15000);
+      subsRef.current[pluralName] = Meteor.subscribe('autopublish.' + pluralName, {}, {}, {
+        onReady: function() { clearTimeout(timeout); resolve(true); },
+        onStop: function(error) {
+          clearTimeout(timeout);
+          if (error) console.warn('[ClinicalScenarioContent] Subscription failed for', pluralName, error.reason || error.message);
+          resolve(false);
+        }
+      });
     });
+  }
 
-    if (allResources.length === 0) return;
-    console.log('[ClinicalScenarioContent] Loaded', allResources.length, 'resources from', selectedCollections.length, 'collections');
-    setResourceList(allResources);
-    setSelectedResourceIndex(-1);
+  var loadBusyState = useState(false);
+  var loadBusy = loadBusyState[0];
+  var setLoadBusy = loadBusyState[1];
+
+  async function handleLoadFromCollection() {
+    setLoadBusy(true);
+    try {
+      // Hydrate any selected collection whose client cache is empty.
+      var hydrations = selectedCollections
+        .filter(function(item) {
+          var collection = Meteor.Collections[item.plural];
+          return collection && collection.find({}).count() === 0;
+        })
+        .map(function(item) { return ensureSubscribed(item.plural); });
+      if (hydrations.length > 0) {
+        await Promise.all(hydrations);
+      }
+
+      var allResources = [];
+      selectedCollections.forEach(function(item) {
+        var collection = Meteor.Collections[item.plural];
+        if (collection) {
+          var records = collection.find({}).fetch();
+          allResources = allResources.concat(records);
+        }
+      });
+
+      if (allResources.length === 0) {
+        console.warn('[ClinicalScenarioContent] No resources found for selection (collections empty server-side too?)');
+        return;
+      }
+      console.log('[ClinicalScenarioContent] Loaded', allResources.length, 'resources from', selectedCollections.length, 'collections');
+      setResourceList(allResources);
+      setSelectedResourceIndex(-1);
+    } finally {
+      setLoadBusy(false);
+    }
   }
 
   function handleSelectResource(index, resource) {
@@ -621,7 +710,7 @@ function ClinicalScenarioContent() {
               multiple
               size="small"
               options={displayCollections}
-              getOptionLabel={function(option) { return option.type + ' (' + option.count + ')'; }}
+              getOptionLabel={function(option) { return option.type + (option.count > 0 ? ' (' + option.count + ')' : ' (server)'); }}
               value={selectedCollections}
               onChange={function(e, newValue) { setSelectedCollections(newValue); }}
               isOptionEqualToValue={function(option, value) { return option.plural === value.plural; }}
@@ -629,7 +718,7 @@ function ClinicalScenarioContent() {
                 return value.map(function(option, index) {
                   return (
                     <Chip
-                      label={option.type + ' (' + option.count + ')'}
+                      label={option.type + (option.count > 0 ? ' (' + option.count + ')' : '')}
                       size="small"
                       {...getTagProps({ index: index })}
                       key={option.plural}
@@ -671,11 +760,11 @@ function ClinicalScenarioContent() {
               <Button
                 variant="contained"
                 size="small"
-                startIcon={<LoadIcon />}
+                startIcon={loadBusy ? <CircularProgress size={14} color="inherit" /> : <LoadIcon />}
                 onClick={handleLoadFromCollection}
-                disabled={selectedCollections.length === 0}
+                disabled={selectedCollections.length === 0 || loadBusy}
               >
-                Load Selected
+                {loadBusy ? 'Loading…' : 'Load Selected'}
               </Button>
               <Button
                 variant="text"
